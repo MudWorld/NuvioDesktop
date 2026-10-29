@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+
 package com.nuvio.app.features.player
 
 import androidx.compose.foundation.background
@@ -33,7 +35,7 @@ private fun AirPlayRouteButton(buttonSize: Dp) {
                 AVRoutePickerView().apply {
                     backgroundColor = UIColor.clearColor
                     tintColor = UIColor.whiteColor
-                    activeTintColor = UIColor.systemBlueColor
+                    activeTintColor = UIColor(red = 0.49, green = 0.36, blue = 0.96, alpha = 1.0)
                     prioritizesVideoDevices = true
                 }
             },

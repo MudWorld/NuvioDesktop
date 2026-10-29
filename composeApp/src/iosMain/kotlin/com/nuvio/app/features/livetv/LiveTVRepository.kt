@@ -34,6 +34,7 @@ import platform.Foundation.NSFileManager
 import platform.Foundation.NSHomeDirectory
 import platform.Foundation.NSUserDefaults
 import platform.Foundation.create
+import platform.Foundation.decompressedDataUsingAlgorithm
 import platform.Foundation.timeIntervalSince1970
 import platform.posix.SEEK_END
 import platform.posix.fclose
