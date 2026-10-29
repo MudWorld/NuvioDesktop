@@ -139,6 +139,9 @@ import com.nuvio.app.features.player.externalPlaybackSession
 import com.nuvio.app.features.player.infusePlaybackCallbacks
 import com.nuvio.app.features.player.recordExternalPlaybackProgress
 import com.nuvio.app.features.player.ExternalPlayerPlatform
+import com.nuvio.app.features.livetv.LiveTVContentType
+import com.nuvio.app.features.livetv.LiveTVPlayback
+import com.nuvio.app.features.livetv.LiveTVPlaybackLauncher
 import com.nuvio.app.features.player.PlayerLaunch
 import com.nuvio.app.features.player.PlayerLaunchStore
 import com.nuvio.app.features.player.PlayerSettingsRepository
@@ -434,6 +437,7 @@ internal fun MainAppContent(
             }
             AppScreenTab.Library -> libraryScrollToTopRequests.tryEmit(Unit)
             AppScreenTab.Settings -> settingsRootActionRequests.tryEmit(Unit)
+            AppScreenTab.LiveTV -> Unit
         }
     }
 
@@ -961,6 +965,35 @@ internal fun MainAppContent(
             }
         }
 
+        fun launchLiveTV(playback: LiveTVPlayback, replaceCurrent: Boolean) {
+            val playerLaunch = PlayerLaunch(
+                profileId = activePlaybackProfileId,
+                title = playback.title,
+                sourceUrl = playback.url,
+                sourceHeaders = playback.headers,
+                streamTitle = playback.title,
+                streamSubtitle = playback.nowPlaying ?: playback.group,
+                providerName = "Live TV",
+                providerAddonId = LiveTVContentType,
+                logo = playback.logo,
+                poster = playback.logo,
+                contentType = LiveTVContentType,
+                parentMetaId = playback.channelId,
+                parentMetaType = LiveTVContentType,
+            )
+            val launchId = PlayerLaunchStore.put(playerLaunch)
+            val route = PlayerRoute(launchId = launchId, title = playerLaunch.title)
+            if (replaceCurrent && navController.currentRoute is PlayerRoute) {
+                navController.navigate(route) {
+                    popUpTo<PlayerRoute> { inclusive = true }
+                }
+            } else {
+                navController.navigate(route)
+            }
+            LiveTVPlaybackLauncher.onPlaybackStarted?.invoke(playback)
+        }
+        LiveTVPlaybackLauncher.handler = ::launchLiveTV
+
         fun launchPlaybackWithDownloadPreference(
             type: String,
             videoId: String,
@@ -1429,6 +1462,7 @@ internal fun MainAppContent(
                                     )
                                 },
                                 onLibrarySectionViewAllClick = onLibrarySectionViewAllClick,
+                                onLiveTVPlay = { playback -> launchLiveTV(playback, replaceCurrent = false) },
                                 onCloudFilePlay = { item, file ->
                                     coroutineScope.launch {
                                         val resumeItem = WatchProgressRepository

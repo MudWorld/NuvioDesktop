@@ -3,6 +3,7 @@ package com.nuvio.app
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -60,6 +61,13 @@ internal fun PlayerDestination(
     }
     val registerSystemBack = remember(route, onSystemBackHandlerChanged) {
         { handler: (() -> Unit)? -> onSystemBackHandlerChanged(route, handler) }
+    }
+    if (launch.parentMetaType == com.nuvio.app.features.livetv.LiveTVContentType) {
+        DisposableEffect(route.launchId) {
+            onDispose {
+                com.nuvio.app.features.livetv.LiveTVPlaybackLauncher.onPlaybackEnded?.invoke(launch.parentMetaId)
+            }
+        }
     }
     LaunchedEffect(launch.videoId) {
         launch.videoId?.let { ResumePromptRepository.markPlayerEntered(it) }

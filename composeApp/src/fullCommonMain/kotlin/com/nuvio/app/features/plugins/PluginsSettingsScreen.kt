@@ -501,6 +501,8 @@ fun PluginsSettingsPageContent(
                 }
             }
         }
+
+        PluginDiagnosticsSection(scrapers = sortedScrapers)
     }
 
     if (configuringScraper != null && configuringLayout != null) {

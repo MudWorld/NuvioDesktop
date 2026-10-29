@@ -58,6 +58,7 @@ import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.core.ui.NuvioSectionLabel
 import com.nuvio.app.core.ui.NuvioStatusModal
 import com.nuvio.app.core.ui.NuvioSurfaceCard
+import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.withDuplicateSafeLazyKeys
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -125,6 +126,22 @@ fun CollectionManagementScreen(
                 text = stringResource(Res.string.collections_new),
                 onClick = { onNavigateToEditor(null) },
             )
+        }
+
+        item { NuvioSectionLabel(text = stringResource(Res.string.collections_templates)) }
+        item {
+            val addedMessage = stringResource(Res.string.collections_template_added)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                CollectionTemplate.entries.forEach { template ->
+                    CollectionTemplateCard(
+                        template = template,
+                        onClick = {
+                            CollectionRepository.addCollection(template.build())
+                            NuvioToastController.show(addedMessage.replace("%1\$s", template.title))
+                        },
+                    )
+                }
+            }
         }
 
         if (collections.isNotEmpty()) {
@@ -221,6 +238,47 @@ fun CollectionManagementScreen(
         },
         onDismiss = { showDeleteConfirm = null },
     )
+}
+
+@Composable
+private fun CollectionTemplateCard(
+    template: CollectionTemplate,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(text = template.emoji, style = MaterialTheme.typography.headlineSmall)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = template.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = template.subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                text = stringResource(Res.string.collections_template_add),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
 }
 
 @Composable

@@ -377,16 +377,24 @@ actual object PluginRepository {
             mediaType = mediaType,
         )
 
-        return runCatching {
-            PluginRuntime.executePlugin(
-                code = scraper.code,
-                tmdbId = resolvedTmdbId,
-                mediaType = normalizePluginType(mediaType),
-                season = season,
-                episode = episode,
-                scraperId = scraper.id,
-                respectSearchPause = respectSearchPause,
-            )
+        val target = buildString {
+            append(normalizePluginType(mediaType))
+            append(' ')
+            append(resolvedTmdbId)
+            if (season != null && episode != null) append(" S${season}E${episode}")
+        }
+        return PluginDiagnostics.track(scraper, target) {
+            runCatching {
+                PluginRuntime.executePlugin(
+                    code = scraper.code,
+                    tmdbId = resolvedTmdbId,
+                    mediaType = normalizePluginType(mediaType),
+                    season = season,
+                    episode = episode,
+                    scraperId = scraper.id,
+                    respectSearchPause = respectSearchPause,
+                )
+            }
         }
     }
 
