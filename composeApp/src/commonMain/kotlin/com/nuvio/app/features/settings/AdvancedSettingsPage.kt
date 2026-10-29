@@ -115,7 +115,7 @@ internal fun LazyListScope.advancedSettingsContent(
             }
         }
     }
-    if (SentrySettingsRepository.isSupported) {
+    if (false && SentrySettingsRepository.isSupported) {
         item {
             val sentryEnabledFlow = remember {
                 SentrySettingsRepository.ensureLoaded()

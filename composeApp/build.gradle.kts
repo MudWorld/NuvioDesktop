@@ -152,7 +152,7 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |package com.nuvio.app.features.discordrpc
                 |
                 |object DiscordConfig {
-                |    const val CLIENT_ID = "${props.getProperty("NUVIO_DISCORD_CLIENT_ID", "1538974392376369212")}" 
+                |    const val CLIENT_ID = "${props.getProperty("NUVIO_DISCORD_CLIENT_ID", "")}" 
                 |}
                 """.trimMargin()
             )
@@ -478,7 +478,7 @@ val desktopReleaseVersionCode = (
     ?.toIntOrNull()
     ?: 1
 val desktopReleasePackageVersion = jpackageCompatibleVersion(desktopReleaseVersionName)
-val windowsMsiUpgradeUuid = "395990ee-9b8a-3548-922c-e7a23a495b8d"
+val windowsMsiUpgradeUuid = "b6abdf3d-3e55-5fdd-bc57-f792bd8e8cd3"
 val iosDistribution = (
     providers.gradleProperty("nuvio.ios.distribution").orNull
         ?: System.getenv("NUVIO_IOS_DISTRIBUTION")
@@ -1279,9 +1279,9 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm, TargetFormat.AppImage)
-            packageName = "Nuvio"
+            packageName = "WatchParty"
             packageVersion = desktopReleasePackageVersion
-            vendor = "Nuvio Media"
+            vendor = "WatchParty"
             if (isMacHost) {
                 appResourcesRootDir.set(macosPlayerAppResourcesRoot)
             }
@@ -1335,13 +1335,13 @@ compose.desktop {
                 upgradeUuid = windowsMsiUpgradeUuid
                 shortcut = true
                 menu = true
-                menuGroup = "Nuvio"
+                menuGroup = "WatchParty"
             }
             linux {
                 iconFile.set(project.file("src/desktopMain/resources/icons/nuvio-app-icon-transparent.png"))
                 debMaintainer = "contact@nuvio.tv"
                 shortcut = true
-                menuGroup = "Nuvio"
+                menuGroup = "WatchParty"
                 appCategory = "AudioVideo"
             }
         }
@@ -1394,8 +1394,8 @@ fun publishWindowsMsiOutput(release: Boolean) {
 
     val distributionName = if (release) "main-release" else "main"
     val outputDir = layout.buildDirectory.dir("compose/binaries/$distributionName/msi").get().asFile
-    val finalMsi = outputDir.resolve("Nuvio-Windows-$windowsPlayerBridgeArch-$desktopReleaseVersionName.msi")
-    val defaultMsi = outputDir.resolve("Nuvio-$desktopReleasePackageVersion.msi")
+    val finalMsi = outputDir.resolve("WatchParty-Windows-$windowsPlayerBridgeArch-$desktopReleaseVersionName.msi")
+    val defaultMsi = outputDir.resolve("WatchParty-$desktopReleasePackageVersion.msi")
     val sourceMsi = defaultMsi.takeIf { it.exists() }
         ?: finalMsi.takeIf { it.exists() }
         ?: error("Expected Windows MSI output in ${outputDir.absolutePath}")

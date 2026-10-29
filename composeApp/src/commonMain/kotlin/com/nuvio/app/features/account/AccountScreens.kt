@@ -71,7 +71,7 @@ fun AccountLoginScreen(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text = "Nuvio",
+                text = "WatchParty",
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.nuvio.colors.textPrimary,
@@ -214,7 +214,7 @@ fun AccountForm() {
             modifier = Modifier.fillMaxWidth(),
         )
         Text(
-            text = stringResource(Res.string.account_server_note, AccountService.serverUrl.removePrefix("https://")),
+            text = stringResource(Res.string.account_server_note),
             style = MaterialTheme.typography.bodySmall,
             color = tokens.colors.textMuted,
         )
@@ -286,6 +286,17 @@ fun AccountSettingsPanel() {
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (status.lastError != null) tokens.colors.danger else tokens.colors.textSecondary,
                 )
+                if (status.pendingRestart) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(Res.string.account_pending_restart),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = tokens.colors.accent,
+                    )
+                    TextButton(onClick = { AccountService.restartApp() }) {
+                        Text(stringResource(Res.string.account_restart_now))
+                    }
+                }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = { scope.launch { AccountService.syncNow() } }) {

@@ -45,7 +45,8 @@ actual object AccountService {
 
     private const val DefaultServerUrl = "https://sync.mudworld.space"
     private const val SectionPrefix = "pc."
-    private const val PushIntervalSeconds = 60L
+    private const val PushIntervalSeconds = 600L
+    private const val RequestDebounceSeconds = 5L
 
     /** Device-local files, caches and server/session state that must not follow the account. */
     private val excludedStores = setOf(
@@ -79,6 +80,8 @@ actual object AccountService {
     @Volatile
     private var suppressShutdownPush = false
     private var pushLoopStarted = false
+    private var executor: java.util.concurrent.ScheduledExecutorService? = null
+    private var pendingRequest: java.util.concurrent.ScheduledFuture<*>? = null
 
     private val _session = MutableStateFlow<AccountSession?>(null)
     actual val session: StateFlow<AccountSession?> = _session.asStateFlow()
@@ -188,6 +191,19 @@ actual object AccountService {
         runCatching { pushChangedStores(force = false) }.onFailure(::recordError)
     }
 
+    actual fun requestSync() {
+        val scheduler = executor ?: return
+        if (token == null) return
+        synchronized(this) {
+            pendingRequest?.cancel(false)
+            pendingRequest = scheduler.schedule(
+                { runCatching { pushChangedStores(force = false) }.onFailure(::recordError) },
+                RequestDebounceSeconds,
+                TimeUnit.SECONDS,
+            )
+        }
+    }
+
     actual fun restartApp() {
         suppressShutdownPush = true
         val command = ProcessHandle.current().info().command().orElse(null)
@@ -202,11 +218,19 @@ actual object AccountService {
     private fun startPushLoop() {
         if (pushLoopStarted) return
         pushLoopStarted = true
-        val executor = Executors.newSingleThreadScheduledExecutor { runnable ->
+        val scheduler = Executors.newSingleThreadScheduledExecutor { runnable ->
             Thread(runnable, "nuvio-account-sync").apply { isDaemon = true }
         }
-        executor.scheduleWithFixedDelay(
-            { if (token != null) runCatching { pushChangedStores(force = false) }.onFailure(::recordError) },
+        executor = scheduler
+        scheduler.scheduleWithFixedDelay(
+            {
+                if (token != null) {
+                    runCatching {
+                        pushChangedStores(force = false)
+                        pullNewerSections(directToStores = false)
+                    }.onFailure(::recordError)
+                }
+            },
             PushIntervalSeconds,
             PushIntervalSeconds,
             TimeUnit.SECONDS,
@@ -236,6 +260,7 @@ actual object AccountService {
             val versions = decodeMap(accountStore.getString("versions"))
             for (file in syncableFiles()) {
                 val storeName = file.name.removeSuffix(".properties")
+                if (Files.exists(stagingDir.resolve(file.name))) continue
                 val content = Files.readString(file)
                 val hash = sha256(content)
                 if (!force && hashes[storeName] == hash) continue
@@ -246,7 +271,10 @@ actual object AccountService {
             }
             accountStore.putString("hashes", encodeMap(hashes))
             accountStore.putString("versions", encodeMap(versions))
-            _syncStatus.value = AccountSyncStatus(lastSyncEpochMs = System.currentTimeMillis())
+            _syncStatus.value = AccountSyncStatus(
+                lastSyncEpochMs = System.currentTimeMillis(),
+                pendingRestart = hasStagedFiles(),
+            )
         } finally {
             _syncStatus.value = _syncStatus.value.copy(syncing = false)
         }
@@ -277,8 +305,14 @@ actual object AccountService {
         }
         accountStore.putString("versions", encodeMap(versions))
         accountStore.putString("hashes", encodeMap(hashes))
-        _syncStatus.value = AccountSyncStatus(lastSyncEpochMs = System.currentTimeMillis())
+        _syncStatus.value = AccountSyncStatus(
+            lastSyncEpochMs = System.currentTimeMillis(),
+            pendingRestart = !directToStores && hasStagedFiles(),
+        )
     }
+
+    private fun hasStagedFiles(): Boolean =
+        Files.isDirectory(stagingDir) && Files.list(stagingDir).use { stream -> stream.findAny().isPresent }
 
     private fun applyStagedFiles() {
         if (!Files.isDirectory(stagingDir)) return

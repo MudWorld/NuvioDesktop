@@ -25,5 +25,7 @@ actual object AccountService {
 
     actual suspend fun syncNow(): Result<Unit> = Result.failure(AccountException("unsupported"))
 
+    actual fun requestSync() = Unit
+
     actual fun restartApp() = Unit
 }

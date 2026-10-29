@@ -13,6 +13,8 @@ data class AccountSyncStatus(
     val syncing: Boolean = false,
     val lastSyncEpochMs: Long = 0L,
     val lastError: String? = null,
+    /** Newer data from another device is downloaded and applied on the next start. */
+    val pendingRestart: Boolean = false,
 )
 
 /** What happened after a successful sign-in. */
@@ -41,5 +43,8 @@ expect object AccountService {
     suspend fun createInvite(): Result<String>
     suspend fun changePassword(oldPassword: String, newPassword: String): Result<Unit>
     suspend fun syncNow(): Result<Unit>
+
+    /** Uploads changes a few seconds from now (playback paused, closed or switched). */
+    fun requestSync()
     fun restartApp()
 }

@@ -81,7 +81,7 @@ internal class MediaBrowserClient(
     }
 
     fun authorizationValue(token: String?): String = buildString {
-        append("MediaBrowser Client=\"Nuvio\", Device=\"")
+        append("MediaBrowser Client=\"WatchParty\", Device=\"")
         append(getPlatform().name.headerValue())
         append("\", DeviceId=\"")
         append(deviceId.headerValue())

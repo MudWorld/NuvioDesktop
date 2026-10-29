@@ -51,7 +51,7 @@
     <string name="plugins_diag_empty">Noch keine Läufe. Öffne einen Film oder eine Folge oder teste hier alle Anbieter.</string>
     <string name="plugins_diag_streams">%1$d Streams</string>
     <string name="plugins_diag_no_streams">Keine Streams gefunden</string>
-    <string name="account_title">Nuvio-Konto</string>
+    <string name="account_title">WatchParty-Konto</string>
     <string name="account_login_subtitle">Melde dich an, damit deine Profile, Addons, Sammlungen, Live TV und dein Fortschritt auf allen Geräten gleich sind.</string>
     <string name="account_sign_in">Anmelden</string>
     <string name="account_register">Konto erstellen</string>
@@ -63,21 +63,21 @@
     <string name="account_password_changed">Passwort geändert. Andere Geräte wurden abgemeldet.</string>
     <string name="account_invite">Einladungscode</string>
     <string name="account_invite_hint">Bekommst du vom Betreiber des Servers</string>
-    <string name="account_server_note">Deine Daten liegen auf %1$s und sind durch dein Passwort geschützt.</string>
-    <string name="account_restarting">Konto-Daten geladen. Nuvio startet neu …</string>
+    <string name="account_server_note">Deine Daten liegen auf deinem privaten Server und sind durch dein Passwort geschützt.</string>
+    <string name="account_restarting">Konto-Daten geladen. WatchParty startet neu …</string>
     <string name="account_uploaded">Angemeldet. Die Daten dieses Geräts sind jetzt in deinem Konto gespeichert.</string>
     <string name="account_not_signed_in">Nicht angemeldet. Melde dich an, um dieses Gerät zu synchronisieren.</string>
     <string name="account_signed_in_as">Angemeldet als %1$s</string>
     <string name="account_syncing">Synchronisiere …</string>
     <string name="account_synced">Alles synchronisiert</string>
-    <string name="account_sync_auto">Synchronisiert automatisch jede Minute und beim Beenden</string>
+    <string name="account_sync_auto">Synchronisiert alle 10 Minuten, beim Pausieren oder Schließen eines Videos und beim Beenden</string>
     <string name="account_sync_now">Jetzt synchronisieren</string>
     <string name="account_change_password">Passwort ändern</string>
     <string name="account_create_invite">Einladungscode erstellen</string>
     <string name="account_invite_created">Einladungscode (14 Tage gültig, einmalig): %1$s</string>
     <string name="account_copy">Kopieren</string>
     <string name="account_sign_out">Abmelden</string>
-    <string name="account_sign_out_message">Deine Daten bleiben in deinem Konto. Die Nuvio-Daten auf diesem Gerät werden entfernt und die App startet neu.</string>
+    <string name="account_sign_out_message">Deine Daten bleiben in deinem Konto. Die WatchParty-Daten auf diesem Gerät werden entfernt und die App startet neu.</string>
     <string name="account_error_fill_fields">Bitte Benutzername und Passwort eingeben.</string>
     <string name="account_error_password_mismatch">Die Passwörter stimmen nicht überein.</string>
     <string name="account_error_credentials">Benutzername oder Passwort falsch.</string>
@@ -90,4 +90,6 @@
     <string name="account_error_full">Der Speicher deines Kontos ist voll.</string>
     <string name="account_error_network">Server nicht erreichbar. Prüfe deine Internetverbindung.</string>
     <string name="account_error_generic">Etwas ist schiefgelaufen. Bitte versuch es noch einmal.</string>
+    <string name="account_pending_restart">Neue Daten von einem anderen Gerät sind da.</string>
+    <string name="account_restart_now">Jetzt neu starten und übernehmen</string>
 </resources>

@@ -371,6 +371,7 @@ internal fun PlayerScreenRuntime.flushWatchProgress(
         session = playbackSession,
         snapshot = playbackSnapshot,
     )
+    com.nuvio.app.core.account.AccountService.requestSync()
 }
 
 internal fun PlayerScreenRuntime.scheduleProgressSyncAfterSeek() {
