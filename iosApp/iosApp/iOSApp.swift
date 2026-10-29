@@ -5,6 +5,12 @@ import ComposeApp
 struct iOSApp: App {
     @UIApplicationDelegateAdaptor(OrientationLockAppDelegate.self) private var appDelegate
 
+    init() {
+        // Apply account data fetched on the last run before any store reads UserDefaults.
+        AccountService.shared.prepareOnLaunch()
+        AirPlayButton_iosKt.installPlayerPlatformSlots()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

@@ -273,6 +273,7 @@ final class MPVPlayerViewController: UIViewController {
     private let errorStateLock = NSLock()
     private var metalLayer = MetalLayer()
     private var pictureInPictureController: PlayerPictureInPictureController?
+    private var airPlay: AirPlayHandoff?
     var systemControlHandler: PlayerSystemControlHandler?
     var keepsPlaybackInBackground: Bool { pictureInPictureController?.keepsPlaybackAlive == true }
     private var lastAppliedDrawableSize: CGSize = .zero
@@ -359,6 +360,7 @@ final class MPVPlayerViewController: UIViewController {
         setupMpv()
         activateAudioSessionForPlayback()
         setupNotifications()
+        airPlay = AirPlayHandoff(owner: self)
         refreshImmersiveSystemUI()
     }
 
@@ -712,6 +714,11 @@ final class MPVPlayerViewController: UIViewController {
     }
 
     func playPlayback() {
+        if let airPlay, airPlay.isActive {
+            airPlay.play()
+            isPlayerPlaying = true
+            return
+        }
         guard mpv != nil else { return }
         publishNowPlayingForPlaybackSession()
         setFlag("pause", false)
@@ -720,6 +727,11 @@ final class MPVPlayerViewController: UIViewController {
     }
 
     func pausePlayback() {
+        if let airPlay, airPlay.isActive {
+            airPlay.pause()
+            isPlayerPlaying = false
+            return
+        }
         guard mpv != nil else { return }
         setFlag("pause", true)
         isPlayerPlaying = false
@@ -727,16 +739,61 @@ final class MPVPlayerViewController: UIViewController {
     }
 
     func seekToMs(_ ms: Int64) {
+        if let airPlay, airPlay.isActive {
+            airPlay.seek(toMs: ms)
+            return
+        }
         guard mpv != nil else { return }
         let seconds = Double(ms) / 1000.0
         command("seek", args: [String(format: "%.3f", seconds), "absolute"])
     }
 
     func seekByMs(_ ms: Int64, exact: Bool = false) {
+        if let airPlay, airPlay.isActive {
+            airPlay.seek(byMs: ms)
+            return
+        }
         guard mpv != nil else { return }
         let seconds = Double(ms) / 1000.0
         let seekMode = exact ? "relative+exact" : "relative"
         command("seek", args: [String(format: "%.3f", seconds), seekMode])
+    }
+
+    // MARK: - AirPlay (see AirPlayHandoff)
+
+    func currentStreamForAirPlay() -> (url: URL, headers: [String: String], positionMs: Int64)? {
+        guard
+            mpv != nil,
+            let path = getString("path"),
+            let url = URL(string: path),
+            let scheme = url.scheme?.lowercased(),
+            scheme == "http" || scheme == "https"
+        else {
+            return nil
+        }
+        refreshPlaybackState()
+        return (url, activeRequestHeaders, positionMs)
+    }
+
+    func pauseLocalForAirPlay() {
+        guard mpv != nil else { return }
+        setFlag("pause", true)
+    }
+
+    func resumeLocalAfterAirPlay(atMs ms: Int64, playing: Bool) {
+        guard mpv != nil else { return }
+        seekToMs(ms)
+        if playing { playPlayback() } else { pausePlayback() }
+    }
+
+    func showAirPlayUnsupported() {
+        let alert = UIAlertController(
+            title: "AirPlay",
+            message: "Dieses Videoformat kann nicht direkt an das Apple TV gesendet werden. Nutze stattdessen die Bildschirmsynchronisierung im Kontrollzentrum.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 
     func retryPlayback() {
@@ -944,6 +1001,8 @@ final class MPVPlayerViewController: UIViewController {
     }
 
     func destroyPlayer() {
+        airPlay?.stop(resumeLocally: false)
+        airPlay = nil
         pictureInPictureController?.invalidate()
         pictureInPictureController = nil
         NotificationCenter.default.removeObserver(self)
@@ -975,6 +1034,16 @@ final class MPVPlayerViewController: UIViewController {
     /// Lightweight state refresh — called by Kotlin polling (every 250ms).
     /// Only reads cheap scalar properties; does NOT re-enumerate tracks.
     func refreshPlaybackState() {
+        if let airPlay, airPlay.isActive {
+            isPlayerLoading = airPlay.isLoading
+            isPlayerPlaying = airPlay.isPlaying
+            isPlayerEnded = airPlay.isEnded
+            durationMs = airPlay.durationMs
+            positionMs = airPlay.positionMs
+            bufferedMs = positionMs
+            syncNowPlayingPlaybackState(isPlaying: isPlayerPlaying)
+            return
+        }
         guard mpv != nil else { return }
         let duration = getDouble("duration")
         let position = getDouble("time-pos")

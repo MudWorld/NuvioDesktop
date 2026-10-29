@@ -62,6 +62,9 @@ import nuvio.composeapp.generated.resources.compose_nav_settings
 import nuvio.composeapp.generated.resources.sidebar_library
 import nuvio.composeapp.generated.resources.sidebar_search
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.material.icons.rounded.LiveTv
+import com.nuvio.app.features.livetv.liveTVSupported
+import nuvio.composeapp.generated.resources.livetv_title
 @Composable
 internal fun MainTabsDestination(
     selectedTab: AppScreenTab,
@@ -141,7 +144,7 @@ internal fun MainTabsDestination(
         }
         val navBarGlowEnabled by ThemeSettingsRepository.navBarGlowEnabled.collectAsStateWithLifecycle()
         var isTopProfileSwitcherOpen by remember { mutableStateOf(false) }
-        val floatingNavigationItems = listOf(
+        val floatingNavigationItems = listOfNotNull(
             FloatingNavigationItem(
                 selected = selectedTab == AppScreenTab.Home,
                 onClick = { onTabSelected(AppScreenTab.Home) },
@@ -160,6 +163,17 @@ internal fun MainTabsDestination(
                 drawable = Res.drawable.sidebar_library,
                 label = stringResource(Res.string.compose_nav_library),
             ),
+            // iPad: Live TV lives in the floating bar (the desktop shows it in its sidebar).
+            if (liveTVSupported && !isDesktop) {
+                FloatingNavigationItem(
+                    selected = selectedTab == AppScreenTab.LiveTV,
+                    onClick = { onTabSelected(AppScreenTab.LiveTV) },
+                    icon = Icons.Rounded.LiveTv,
+                    label = stringResource(Res.string.livetv_title),
+                )
+            } else {
+                null
+            },
             FloatingNavigationItem(
                 selected = selectedTab == AppScreenTab.Settings,
                 onClick = { onTabSelected(AppScreenTab.Settings) },

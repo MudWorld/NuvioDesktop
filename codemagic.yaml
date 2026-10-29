@@ -1,0 +1,35 @@
+# Codemagic build of the unsigned WatchParty iPad/iPhone IPA (same steps as
+# .github/workflows/ios-test-build.yml), for sideloading with Sideloadly or AltStore.
+# Builds start manually only (no push trigger).
+
+workflows:
+  ipad-unsigned-ipa:
+    name: iPad unsigned IPA
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+    environment:
+      xcode: 27.1
+      java: 17
+      vars:
+        IOS_CONFIGURATION: Release
+        GRADLE_OPTS: -Dfile.encoding=UTF-8
+        KOTLIN_DAEMON_JVMARGS: -Xmx2048M
+        NUVIO_GRADLE_JVMARGS: -Xmx4608M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=768M
+        NUVIO_KOTLIN_NATIVE_JVMARGS: -Xmx4608M
+    cache:
+      cache_paths:
+        - ~/.konan
+        - ~/.gradle/caches
+    scripts:
+      - name: Toolchain
+        script: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          java -version
+          touch local.properties
+      - name: Prepare iOS dependencies
+        script: ./scripts/prepare-ios-dependencies.sh
+      - name: Build unsigned IPA
+        script: ./scripts/build-ios-ipa.sh
+    artifacts:
+      - build/ios-ipa/*.ipa

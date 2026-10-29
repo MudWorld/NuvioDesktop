@@ -48,7 +48,7 @@
 		</dict>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Nuvio connects to media servers on your local network.</string>
+	<string>WatchParty verbindet sich mit Medienservern und deinem Apple TV im lokalen Netzwerk.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

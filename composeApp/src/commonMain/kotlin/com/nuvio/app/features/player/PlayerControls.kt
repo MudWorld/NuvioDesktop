@@ -524,6 +524,7 @@ private fun PlayerHeader(
                             tint = if (partyActive) MaterialTheme.colorScheme.primary else Color.White,
                         )
                     }
+                    PlayerPlatformSlots.airPlayButton?.invoke(metrics.headerIconSize + 16.dp)
                     PlayerHeaderIconButton(
                         icon = if (isLocked) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
                         contentDescription = if (isLocked) {
