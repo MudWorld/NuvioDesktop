@@ -29,6 +29,18 @@ workflows:
           xcrun --sdk iphoneos --show-sdk-version
           java -version
           touch local.properties
+          # Codemagic's ~/.gradle/gradle.properties caps the daemon at 3 GB and wins over
+          # the project file; the iOS framework link needs much more.
+          mkdir -p ~/.gradle
+          touch ~/.gradle/gradle.properties
+          sed -i '' -E '/^(org\.gradle\.jvmargs|kotlin\.daemon\.jvmargs|kotlin\.native\.jvmArgs)=/d' ~/.gradle/gradle.properties
+          {
+            echo "org.gradle.jvmargs=-Xmx10240M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=1024M"
+            echo "kotlin.daemon.jvmargs=-Xmx3072M"
+            echo "kotlin.native.jvmArgs=-Xmx10240M"
+          } >> ~/.gradle/gradle.properties
+          cat ~/.gradle/gradle.properties
+          sysctl -n hw.memsize
       - name: Prepare iOS dependencies
         script: ./scripts/prepare-ios-dependencies.sh
       - name: Build unsigned IPA
