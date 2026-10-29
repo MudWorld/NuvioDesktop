@@ -64,6 +64,10 @@ internal fun LazyListScope.accountSettingsContent(
 private fun AccountSettingsBody(
     isTablet: Boolean,
 ) {
+    if (com.nuvio.app.core.account.AccountService.supported) {
+        com.nuvio.app.features.account.AccountSettingsPanel()
+        return
+    }
     val authState by AuthRepository.state.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var showSignOutConfirm by remember { mutableStateOf(false) }

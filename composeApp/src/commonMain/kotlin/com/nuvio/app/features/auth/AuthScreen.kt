@@ -188,6 +188,10 @@ private fun largeAuthFormMetrics(scale: Float): AuthFormMetrics = LargeAuthFormM
 fun AuthScreen(
     modifier: Modifier = Modifier,
 ) {
+    if (com.nuvio.app.core.account.AccountService.supported) {
+        com.nuvio.app.features.account.AccountLoginScreen(modifier)
+        return
+    }
     val authError by AuthRepository.error.collectAsStateWithLifecycle()
     val deviceLinkAuthState by DeviceLinkAuthRepository.state.collectAsStateWithLifecycle()
     val serverConnectionState by ServerConnectionController.state.collectAsStateWithLifecycle()
