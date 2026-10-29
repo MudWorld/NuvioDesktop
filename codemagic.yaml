@@ -13,11 +13,11 @@ workflows:
       vars:
         IOS_CONFIGURATION: Release
         GRADLE_OPTS: -Dfile.encoding=UTF-8
-        # The iOS Kotlin compile ran out of heap with a 2 GB daemon; the Gradle JVM
-        # mostly waits while the Kotlin daemon compiles, so the daemon gets the memory.
-        KOTLIN_DAEMON_JVMARGS: -Xmx6144M
-        NUVIO_GRADLE_JVMARGS: -Xmx3072M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=768M
-        NUVIO_KOTLIN_NATIVE_JVMARGS: -Xmx6144M
+        # linkReleaseFrameworkIosArm64 runs inside the Gradle JVM and needs far more
+        # than 4.5 GB; the Kotlin daemon only compiles klibs and fits in 3 GB.
+        KOTLIN_DAEMON_JVMARGS: -Xmx3072M
+        NUVIO_GRADLE_JVMARGS: -Xmx10240M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=1024M
+        NUVIO_KOTLIN_NATIVE_JVMARGS: -Xmx10240M
     cache:
       cache_paths:
         - ~/.konan
