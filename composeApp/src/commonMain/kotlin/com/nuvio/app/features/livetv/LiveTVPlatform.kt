@@ -34,6 +34,9 @@ expect fun LiveTVScreen(
 object LiveTVPlaybackLauncher {
     var handler: ((playback: LiveTVPlayback, replaceCurrent: Boolean) -> Unit)? = null
 
+    /** True while the Live TV tab is the visible screen (tabs stay composed in the background). */
+    var screenActive: Boolean = false
+
     /** Notified when a Live TV channel starts playing. */
     var onPlaybackStarted: ((LiveTVPlayback) -> Unit)? = null
 

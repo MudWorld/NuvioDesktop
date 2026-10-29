@@ -11,6 +11,8 @@ import kotlinx.serialization.json.Json
 
 data class CollectionMobileSettingsUiState(
     val folderGifOverrides: Map<String, Boolean> = emptyMap(),
+    /** Collections whose folders are listed in the desktop sidebar, as on Apple TV. */
+    val sidebarCollectionIds: List<String> = emptyList(),
 )
 
 object CollectionMobileSettingsRepository {
@@ -77,9 +79,23 @@ object CollectionMobileSettingsRepository {
                 next[key] = false
             }
         }
-        _uiState.value = CollectionMobileSettingsUiState(folderGifOverrides = next)
+        _uiState.value = _uiState.value.copy(folderGifOverrides = next)
         persist()
         CollectionRepository.onMobileSettingsChanged()
+    }
+
+    fun isInSidebar(collectionId: String): Boolean {
+        ensureLoaded()
+        return collectionId in _uiState.value.sidebarCollectionIds
+    }
+
+    fun setInSidebar(collectionId: String, enabled: Boolean) {
+        ensureLoaded()
+        val current = _uiState.value.sidebarCollectionIds
+        val next = if (enabled) (current - collectionId) + collectionId else current - collectionId
+        if (next == current) return
+        _uiState.value = _uiState.value.copy(sidebarCollectionIds = next)
+        persist()
     }
 
     private fun loadFromDisk() {
@@ -107,11 +123,12 @@ object CollectionMobileSettingsRepository {
                     }
                 }
                 .toMap(),
+            sidebarCollectionIds = stored?.sidebarCollectionIds.orEmpty().filter { it.isNotBlank() }.distinct(),
         )
     }
 
     private fun persist() {
-        if (_uiState.value.folderGifOverrides.isEmpty()) {
+        if (_uiState.value.folderGifOverrides.isEmpty() && _uiState.value.sidebarCollectionIds.isEmpty()) {
             CollectionMobileSettingsStorage.savePayload("")
             return
         }
@@ -132,6 +149,7 @@ object CollectionMobileSettingsRepository {
                     }
                 }
                 .sortedWith(compareBy<StoredFolderGifOverride> { it.collectionId }.thenBy { it.folderId }),
+            sidebarCollectionIds = _uiState.value.sidebarCollectionIds,
         )
         CollectionMobileSettingsStorage.savePayload(json.encodeToString(payload))
     }
@@ -145,6 +163,7 @@ private const val FolderKeySeparator = "\u001F"
 @Serializable
 private data class StoredCollectionMobileSettingsPayload(
     @SerialName("folder_gif_overrides") val folderGifOverrides: List<StoredFolderGifOverride> = emptyList(),
+    @SerialName("sidebar_collection_ids") val sidebarCollectionIds: List<String> = emptyList(),
 )
 
 @Serializable

@@ -1,6 +1,8 @@
 package com.nuvio.app.features.livetv
 
 import com.nuvio.app.core.ui.NuvioToastController
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import java.awt.KeyEventDispatcher
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
@@ -30,9 +32,19 @@ internal object LiveTVKeyboardZapper {
         )
     }
 
+    private val _searchRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val searchRequests: SharedFlow<Unit> = _searchRequests
+
     private fun handle(event: KeyEvent): Boolean {
-        val channelId = currentChannelId ?: return false
         if (event.id != KeyEvent.KEY_PRESSED) return false
+        val channelId = currentChannelId
+        if (channelId == null) {
+            if (LiveTVPlaybackLauncher.screenActive && event.isControlDown && event.keyCode == KeyEvent.VK_F) {
+                _searchRequests.tryEmit(Unit)
+                return true
+            }
+            return false
+        }
         if (event.isControlDown || event.isAltDown || event.isMetaDown) return false
         return when (event.keyCode) {
             KeyEvent.VK_UP, KeyEvent.VK_PAGE_UP -> zap(channelId, step = -1)

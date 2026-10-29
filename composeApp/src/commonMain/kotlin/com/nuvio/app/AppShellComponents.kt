@@ -34,6 +34,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowRight
+import androidx.compose.ui.layout.ContentScale
+import com.nuvio.app.core.ui.NuvioAsyncImage
+import com.nuvio.app.features.collection.Collection
+import com.nuvio.app.features.collection.CollectionFolder
+import com.nuvio.app.features.collection.CollectionMobileSettingsRepository
+import com.nuvio.app.features.collection.CollectionRepository
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material.icons.rounded.Settings
@@ -43,6 +54,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -70,6 +82,7 @@ import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.cloud.CloudLibraryContentType
 import com.nuvio.app.features.livetv.LiveTVPlayback
+import com.nuvio.app.features.livetv.LiveTVPlaybackLauncher
 import com.nuvio.app.features.livetv.LiveTVScreen
 import com.nuvio.app.features.livetv.liveTVSupported
 import com.nuvio.app.features.cloud.CloudLibraryFile
@@ -316,6 +329,8 @@ internal fun AppTabHost(
             }
 
             AppScreenTab.LiveTV -> {
+                val liveTVActive = selectedTab == AppScreenTab.LiveTV && state.tabsRouteActiveState.value
+                SideEffect { LiveTVPlaybackLauncher.screenActive = liveTVActive }
                 LiveTVScreen(
                     modifier = Modifier.fillMaxSize(),
                     topChromePadding = state.topChromePadding,
@@ -742,10 +757,12 @@ internal fun DesktopHoverSidebar(
     hoverSource: MutableInteractionSource = remember { MutableInteractionSource() },
     profileStackVisible: Boolean = false,
     onProfileStackVisibleChange: (Boolean) -> Unit = {},
+    onFolderClick: ((collectionId: String, folderId: String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.nuvio
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val sidebarCollections = rememberSidebarCollections()
     val profileState by ProfileRepository.state.collectAsStateWithLifecycle()
     val avatars by AvatarRepository.avatars.collectAsStateWithLifecycle()
     val activeProfile = profileState.activeProfile
@@ -828,11 +845,27 @@ internal fun DesktopHoverSidebar(
                 )
             }
 
+            val hasSidebarCollections = sidebarCollections.isNotEmpty() && onFolderClick != null
             Column(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .offset(y = animatedNavColumnOffset)
-                    .fillMaxWidth(),
+                modifier = if (hasSidebarCollections) {
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(
+                            top = if (profileStackVisible) {
+                                minNavTop
+                            } else {
+                                profileTopPadding + DesktopSidebarItemHeight + 20.dp
+                            },
+                        )
+                        .fillMaxWidth()
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                } else {
+                    Modifier
+                        .align(Alignment.Center)
+                        .offset(y = animatedNavColumnOffset)
+                        .fillMaxWidth()
+                },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 DesktopSidebarItem(
@@ -902,7 +935,131 @@ internal fun DesktopHoverSidebar(
                         tint = color,
                     )
                 }
+                if (hasSidebarCollections) {
+                    DesktopSidebarCollections(
+                        collections = sidebarCollections,
+                        expanded = sidebarExpanded,
+                        onFolderClick = { collectionId, folderId ->
+                            onProfileStackVisibleChange(false)
+                            onFolderClick?.invoke(collectionId, folderId)
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
+        }
+    }
+}
+
+/** Collections the user put in the sidebar (Settings > Collections), in their saved order. */
+@Composable
+private fun rememberSidebarCollections(): List<Collection> {
+    val collections by CollectionRepository.collections.collectAsStateWithLifecycle()
+    val settings by CollectionMobileSettingsRepository.uiState.collectAsStateWithLifecycle()
+    return remember(collections, settings.sidebarCollectionIds) {
+        collections.filter { it.id in settings.sidebarCollectionIds && it.folders.isNotEmpty() }
+    }
+}
+
+/**
+ * Lists each sidebar collection's folders like the Apple TV sidebar: a section title per
+ * collection (click to fold) and one row per folder with its logo or emoji.
+ */
+@Composable
+private fun DesktopSidebarCollections(
+    collections: List<Collection>,
+    expanded: Boolean,
+    onFolderClick: (collectionId: String, folderId: String) -> Unit,
+) {
+    val tokens = MaterialTheme.nuvio
+    var collapsedIds by remember { mutableStateOf(emptySet<String>()) }
+
+    collections.forEach { collection ->
+        val isCollapsed = collection.id in collapsedIds
+        Spacer(modifier = Modifier.height(10.dp))
+        if (expanded) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable {
+                        collapsedIds = if (isCollapsed) collapsedIds - collection.id else collapsedIds + collection.id
+                    }
+                    .padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = collection.title,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = tokens.colors.textMuted,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Icon(
+                    imageVector = if (isCollapsed) Icons.Rounded.KeyboardArrowRight else Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = tokens.colors.textMuted,
+                )
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .padding(vertical = 6.dp)
+                    .width(28.dp)
+                    .height(1.dp)
+                    .background(tokens.colors.borderSubtle),
+            )
+        }
+        if (!isCollapsed) {
+            collection.folders.forEach { folder ->
+                DesktopSidebarItem(
+                    label = folder.title,
+                    selected = false,
+                    expanded = expanded,
+                    onClick = { onFolderClick(collection.id, folder.id) },
+                ) { _ ->
+                    DesktopSidebarFolderIcon(folder)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DesktopSidebarFolderIcon(folder: CollectionFolder) {
+    val tokens = MaterialTheme.nuvio
+    val imageUrl = folder.titleLogoUrl?.takeIf { it.isNotBlank() }
+        ?: folder.coverImageUrl?.takeIf { it.isNotBlank() }
+    val emoji = folder.coverEmoji?.takeIf { it.isNotBlank() }
+    Box(
+        modifier = Modifier
+            .size(30.dp)
+            .clip(CircleShape)
+            .background(tokens.colors.surfaceElevated),
+        contentAlignment = Alignment.Center,
+    ) {
+        when {
+            imageUrl != null -> NuvioAsyncImage(
+                model = imageUrl,
+                contentDescription = folder.title,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(3.dp),
+                contentScale = ContentScale.Fit,
+            )
+            emoji != null -> Text(
+                text = emoji,
+                style = MaterialTheme.typography.titleSmall,
+            )
+            else -> Text(
+                text = folder.title.take(1).uppercase(),
+                style = MaterialTheme.typography.titleSmall,
+                color = tokens.colors.textSecondary,
+            )
         }
     }
 }

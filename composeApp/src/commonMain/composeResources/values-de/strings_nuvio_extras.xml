@@ -38,6 +38,12 @@
     <string name="collections_templates">Vorlagen</string>
     <string name="collections_template_add">Hinzufügen</string>
     <string name="collections_template_added">„%1$s“ hinzugefügt</string>
+    <string name="collections_in_sidebar">In der Seitenleiste anzeigen</string>
+    <string name="collections_in_sidebar_desc">Alle Ordner dieser Sammlung im Seitenmenü auflisten, wie auf dem Apple TV</string>
+    <string name="collections_on_home">Auf der Startseite anzeigen</string>
+    <string name="collections_on_home_desc">Diese Sammlung als Reihe auf der Startseite zeigen</string>
+    <string name="collections_pin_top">Oben anpinnen</string>
+    <string name="collections_pin_top_desc">Diese Sammlung auf der Startseite über allen Katalogen zeigen</string>
     <string name="plugins_diag_title">Diagnose</string>
     <string name="plugins_diag_test_all">Alle aktiven Anbieter testen</string>
     <string name="plugins_diag_testing">Teste …</string>

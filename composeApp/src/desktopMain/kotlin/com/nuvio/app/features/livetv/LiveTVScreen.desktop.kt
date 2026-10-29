@@ -129,6 +129,10 @@ actual fun LiveTVScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        LiveTVKeyboardZapper.searchRequests.collect { runCatching { searchFocus.requestFocus() } }
+    }
+
     val byId = remember(channels) { channels.associateBy { it.id } }
     val visible = remember(channels, hiddenIds) { channels.filterNot { it.id in hiddenIds } }
     val groups = remember(visible) { visible.map { it.group }.distinct() }

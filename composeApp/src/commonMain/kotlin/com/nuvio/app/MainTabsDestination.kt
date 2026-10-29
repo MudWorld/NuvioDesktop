@@ -266,6 +266,7 @@ internal fun MainTabsDestination(
                         hoverSource = sidebarHoverSource,
                         profileStackVisible = isProfileStackVisible,
                         onProfileStackVisibleChange = { isProfileStackVisible = it },
+                        onFolderClick = tabActions.onFolderClick,
                         modifier = Modifier.align(Alignment.CenterStart),
                     )
                 }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -38,6 +39,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
@@ -67,6 +69,7 @@ import com.nuvio.app.core.ui.NuvioSectionLabel
 import com.nuvio.app.core.ui.NuvioStatusModal
 import com.nuvio.app.core.ui.NuvioSurfaceCard
 import com.nuvio.app.core.ui.NuvioToastController
+import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.core.ui.withDuplicateSafeLazyKeys
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -417,6 +420,8 @@ private fun CollectionListItem(
             }
         }
         Spacer(modifier = Modifier.height(10.dp))
+        CollectionPlacementToggles(collection)
+        Spacer(modifier = Modifier.height(4.dp))
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -465,6 +470,66 @@ private fun CollectionListItem(
                 )
             }
         }
+    }
+}
+
+/** Where a collection shows up, as in the Apple TV settings: sidebar, home screen, pinned on top. */
+@Composable
+private fun CollectionPlacementToggles(collection: Collection) {
+    val mobileSettings by CollectionMobileSettingsRepository.uiState.collectAsState()
+    val homeSettings by HomeCatalogSettingsRepository.uiState.collectAsState()
+    val homeKey = "collection_${collection.id}"
+    val onHome = homeSettings.items.firstOrNull { it.key == homeKey }?.enabled ?: true
+
+    Column {
+        PlacementSwitchRow(
+            title = stringResource(Res.string.collections_in_sidebar),
+            subtitle = stringResource(Res.string.collections_in_sidebar_desc),
+            checked = collection.id in mobileSettings.sidebarCollectionIds,
+            onCheckedChange = { CollectionMobileSettingsRepository.setInSidebar(collection.id, it) },
+        )
+        PlacementSwitchRow(
+            title = stringResource(Res.string.collections_on_home),
+            subtitle = stringResource(Res.string.collections_on_home_desc),
+            checked = onHome,
+            onCheckedChange = { HomeCatalogSettingsRepository.setEnabled(homeKey, it) },
+        )
+        PlacementSwitchRow(
+            title = stringResource(Res.string.collections_pin_top),
+            subtitle = stringResource(Res.string.collections_pin_top_desc),
+            checked = collection.pinToTop,
+            onCheckedChange = { CollectionRepository.updateCollection(collection.copy(pinToTop = it)) },
+        )
+    }
+}
+
+@Composable
+private fun PlacementSwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
