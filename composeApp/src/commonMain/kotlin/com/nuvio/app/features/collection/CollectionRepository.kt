@@ -16,6 +16,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.collections_import_error_collection_blank_id
@@ -87,6 +88,18 @@ object CollectionRepository {
         val decorated = CollectionMobileSettingsRepository.applyToCollection(collection)
         _collections.value = _collections.value.upsertCollectionById(decorated)
         persist()
+    }
+
+    /**
+     * Adds a collection from raw JSON and keeps every field of it in storage, including
+     * ones the typed model does not know (`templateID`, `presentationStyle`, ...).
+     */
+    fun addCollectionJson(raw: JsonObject): Collection {
+        ensureLoaded()
+        val collection = json.decodeFromJsonElement<Collection>(raw)
+        rawCollectionsJson = JsonArray(mergedCollectionsJson() + raw)
+        addCollection(collection)
+        return collection
     }
 
     fun updateCollection(collection: Collection) {

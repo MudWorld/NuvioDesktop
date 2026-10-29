@@ -1,5 +1,13 @@
 package com.nuvio.app.features.collection
 
+import androidx.compose.foundation.background
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import com.nuvio.app.core.ui.NuvioAsyncImage
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -131,13 +139,36 @@ fun CollectionManagementScreen(
         item { NuvioSectionLabel(text = stringResource(Res.string.collections_templates)) }
         item {
             val addedMessage = stringResource(Res.string.collections_template_added)
+            val scope = rememberCoroutineScope()
+            var addingTemplate by remember { mutableStateOf<CollectionTemplate?>(null) }
+            var streamingLogos by remember { mutableStateOf(StreamingServicesTemplate.fallbackLogoUrls) }
+            LaunchedEffect(Unit) {
+                streamingLogos = runCatching { StreamingServicesTemplate.resolveLogoUrls() }
+                    .getOrDefault(streamingLogos)
+            }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 CollectionTemplate.entries.forEach { template ->
                     CollectionTemplateCard(
                         template = template,
+                        logoUrls = if (template == CollectionTemplate.StreamingServices) {
+                            StreamingServicesTemplate.services.mapNotNull { streamingLogos[it.providerId] }
+                        } else {
+                            emptyList()
+                        },
+                        busy = addingTemplate == template,
                         onClick = {
-                            CollectionRepository.addCollection(template.build())
-                            NuvioToastController.show(addedMessage.replace("%1\$s", template.title))
+                            if (addingTemplate != null) return@CollectionTemplateCard
+                            addingTemplate = template
+                            scope.launch {
+                                val payload = if (template == CollectionTemplate.StreamingServices) {
+                                    StreamingServicesTemplate.payload(streamingLogos)
+                                } else {
+                                    template.payload()
+                                }
+                                CollectionRepository.addCollectionJson(payload)
+                                NuvioToastController.show(addedMessage.replace("%1\$s", template.title))
+                                addingTemplate = null
+                            }
                         },
                     )
                 }
@@ -243,6 +274,8 @@ fun CollectionManagementScreen(
 @Composable
 private fun CollectionTemplateCard(
     template: CollectionTemplate,
+    logoUrls: List<String>,
+    busy: Boolean,
     onClick: () -> Unit,
 ) {
     Surface(
@@ -271,9 +304,25 @@ private fun CollectionTemplateCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (logoUrls.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        logoUrls.forEach { url ->
+                            NuvioAsyncImage(
+                                model = url,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(width = 64.dp, height = 36.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Color.White.copy(alpha = 0.06f)),
+                                contentScale = ContentScale.Fit,
+                            )
+                        }
+                    }
+                }
             }
             Text(
-                text = stringResource(Res.string.collections_template_add),
+                text = if (busy) "…" else stringResource(Res.string.collections_template_add),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
             )
