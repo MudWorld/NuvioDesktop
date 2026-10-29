@@ -7,6 +7,8 @@ name: Build Windows MSI (fork)
 
 on:
   workflow_dispatch:
+  push:
+    branches: [desktop-livetv]
 
 permissions:
   contents: read
