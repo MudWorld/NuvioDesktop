@@ -24,8 +24,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -69,6 +71,7 @@ actual object AccountService {
     private const val RequestDebounceMs = 5_000L
     private const val DesktopPrefix = "pc."
     private const val ImportKey = "import.pc"
+    private const val ImportDoneKey = "pc_import_done"
 
     /** Device-local state, caches and system keys that must not follow the account. */
     private val excludedPrefixes = listOf(
@@ -79,13 +82,19 @@ actual object AccountService {
     )
 
     private val json = Json { ignoreUnknownKeys = true }
-    private val http = HttpClient(Darwin) {
-        followRedirects = false
-        expectSuccess = false
-        install(HttpTimeout) {
-            requestTimeoutMillis = 30_000
-            connectTimeoutMillis = 10_000
-            socketTimeoutMillis = 30_000
+    // Created on a background thread: the Darwin engine delivers its callbacks on the queue it was
+    // created on, and the launch import below waits on the main thread.
+    private val http: HttpClient by lazy {
+        runBlocking(Dispatchers.Default) {
+            HttpClient(Darwin) {
+                followRedirects = false
+                expectSuccess = false
+                install(HttpTimeout) {
+                    requestTimeoutMillis = 30_000
+                    connectTimeoutMillis = 10_000
+                    socketTimeoutMillis = 30_000
+                }
+            }
         }
     }
     private val defaults get() = NSUserDefaults.standardUserDefaults
@@ -120,7 +129,35 @@ actual object AccountService {
         prepared = true
         applyStagedBuckets()
         loadSession()
+        importDesktopDataIfEmpty()
         startPushLoop()
+    }
+
+    /**
+     * Signed in, but no addons on this iPad and never copied from the PC (e.g. signed in with an
+     * older build): copy the PC's data now, before any repository reads UserDefaults. Waits at
+     * most a few seconds; if the server is slow, the copy is applied on the next launch instead.
+     */
+    private fun importDesktopDataIfEmpty() {
+        if (_session.value == null || accountStore.boolForKey(ImportDoneKey) || hasInstalledAddons()) return
+        val staged = runBlocking(Dispatchers.Default) {
+            withTimeoutOrNull(8_000) { runCatching { stageDesktopImport() }.isSuccess }
+        }
+        if (staged == true) {
+            applyStagedImport()
+            _syncStatus.value = _syncStatus.value.copy(pendingRestart = false)
+            requestSync()
+        } else if (staged == null) {
+            scope.launch { runCatching { stageDesktopImport() } }
+        }
+    }
+
+    private fun hasInstalledAddons(): Boolean {
+        val domain = defaults.persistentDomainForName(domainName) ?: return false
+        return domain.keys.any { raw ->
+            val key = raw as? String ?: return@any false
+            key.startsWith("installed_manifest_urls_") && !(domain[key] as? String).isNullOrBlank()
+        }
     }
 
     private fun loadSession() {
@@ -152,6 +189,7 @@ actual object AccountService {
             accountStore.removeObjectForKey("versions")
             accountStore.removeObjectForKey("hashes")
             accountStore.removeObjectForKey("remote_key")
+            accountStore.removeObjectForKey(ImportDoneKey)
             loadSession()
 
             val remote = listRemoteSections().filterKeys { it.startsWith(SectionPrefix) }
@@ -262,6 +300,11 @@ actual object AccountService {
             "nuvio_player_track_preferences" to { key, value -> sameKey(key, value) },
             "torrent_settings" to { key, value -> sameKey(key, value) },
             "episode_shuffle" to { key, value -> sameKey(key, value) },
+            // Plugin repositories and scraper settings; the scraper code itself is fetched again
+            // from the repositories on the iPad (stored state without code triggers a refresh).
+            "nuvio_plugins" to { key, value ->
+                (key to value).takeIf { key.startsWith("plugins_state_") || key.startsWith("settings_") }
+            },
             "nuvio_player_settings" to { key, value ->
                 (key to value).takeIf {
                     key.startsWith("preferred_") || key.startsWith("secondary_preferred_") || key.startsWith("subtitle_")
@@ -516,6 +559,8 @@ actual object AccountService {
             if (isSyncable(key)) defaults.setObject(value, forKey = key)
         }
         stagingStore.removeObjectForKey(ImportKey)
+        accountStore.setBool(true, forKey = ImportDoneKey)
+        accountStore.synchronize()
         defaults.synchronize()
         stagingStore.synchronize()
     }

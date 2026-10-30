@@ -285,21 +285,9 @@ internal fun MainTabsDestination(
                     )
                 }
 
+                // Tablets: only the floating icon bar below. The text bar (TabletFloatingTopBar) was
+                // drawn at the same spot on top of it, so the two overlapped.
                 if (useFloatingTopBar) {
-                    TabletFloatingTopBar(
-                        selectedTab = selectedTab,
-                        onTabSelected = onTabSelected,
-                        onProfileSelected = onProfileSelected,
-                        onAddProfileRequested = onAddProfileRequested,
-                        navBarStyleSetting = navBarStyleSetting,
-                        isHeroEnabled = homeCatalogSettingsUiState.heroEnabled,
-                        hazeState = navBarHazeState,
-                        scrollState = navBarScrollState,
-                        windowWidth = screenWidth,
-                    )
-                }
-
-                if (isTabletLayout && !useNativeBottomTabs && !isDesktop) {
                     val tabletNavBarScrollState = remember { NuvioNavBarScrollState().apply { collapse() } }
                     FloatingNavigationBar(
                         modifier = Modifier.align(Alignment.TopCenter).widthIn(max = 416.dp),
