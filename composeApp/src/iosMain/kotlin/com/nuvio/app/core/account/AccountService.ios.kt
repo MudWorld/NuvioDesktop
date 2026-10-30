@@ -151,10 +151,11 @@ actual object AccountService {
             accountStore.setBool(sessionJson["isAdmin"]?.jsonPrimitive?.booleanOrNull == true, forKey = "is_admin")
             accountStore.removeObjectForKey("versions")
             accountStore.removeObjectForKey("hashes")
+            accountStore.removeObjectForKey("remote_key")
             loadSession()
 
             val remote = listRemoteSections().filterKeys { it.startsWith(SectionPrefix) }
-            if (remote.isEmpty() && runCatching { stageDesktopImport() }.getOrDefault(0) > 0) {
+            if (remote.isEmpty() && !hasLocalUserData() && runCatching { stageDesktopImport() }.getOrDefault(0) > 0) {
                 // First iPad of this account: start from a copy of the PC's data (applied after the restart).
                 if (AuthRepository.state.value !is AuthState.Authenticated) {
                     AuthRepository.signInAnonymously()
@@ -224,6 +225,17 @@ actual object AccountService {
         return values.size
     }
 
+    /** True when this iPad already holds addons, library or watch history of its own. */
+    private fun hasLocalUserData(): Boolean {
+        val domain = defaults.persistentDomainForName(domainName) ?: return false
+        return domain.keys.any { raw ->
+            val key = raw as? String ?: return@any false
+            (key.startsWith("installed_manifest_urls_") || key.startsWith("library_payload_") ||
+                key.startsWith("watched_payload_") || key.startsWith("watch_progress_payload_")) &&
+                !(domain[key] as? String).isNullOrBlank()
+        }
+    }
+
     private fun sameKey(key: String, value: String): Pair<String, String> = key to value
 
     /** `<from>` or `<from>_<profile>` on the PC is `<to>` / `<to>_<profile>` on the iPad. */
@@ -238,7 +250,7 @@ actual object AccountService {
 
     /** PC store → iPad key/value. Stores not listed (caches, device state, auth, plugins) are not copied. */
     private val desktopImportRules: Map<String, (String, String) -> Pair<String, String>?> by lazy {
-        mapOf(
+        mapOf<String, (String, String) -> Pair<String, String>?>(
             "nuvio_addons" to { key, value -> convertDesktopAddons(key, value) },
             "nuvio_tmdb_settings" to { key, value -> sameKey(key, value) },
             "nuvio_debrid_settings" to { key, value -> sameKey(key, value) },
@@ -497,16 +509,23 @@ actual object AccountService {
             stagingStore.dictionaryRepresentation().keys.any { (it as? String)?.startsWith(SectionPrefix) == true }
 
     /** Replaces each staged bucket's keys in UserDefaults (keys missing remotely are removed). */
-    private fun applyStagedBuckets() {
-        stagingStore.stringForKey(ImportKey)?.let { raw ->
-            runCatching { json.parseToJsonElement(raw).jsonObject }.getOrNull()?.forEach { (key, element) ->
-                val value = element.jsonPrimitive.contentOrNull ?: return@forEach
-                if (isSyncable(key)) defaults.setObject(value, forKey = key)
-            }
-            stagingStore.removeObjectForKey(ImportKey)
-            defaults.synchronize()
-            stagingStore.synchronize()
+    private fun applyStagedImport() {
+        val raw = stagingStore.stringForKey(ImportKey) ?: return
+        runCatching { json.parseToJsonElement(raw).jsonObject }.getOrNull()?.forEach { (key, element) ->
+            val value = element.jsonPrimitive.contentOrNull ?: return@forEach
+            if (isSyncable(key)) defaults.setObject(value, forKey = key)
         }
+        stagingStore.removeObjectForKey(ImportKey)
+        defaults.synchronize()
+        stagingStore.synchronize()
+    }
+
+    private fun applyStagedBuckets() {
+        applyStagedBucketSections()
+        applyStagedImport()
+    }
+
+    private fun applyStagedBucketSections() {
         val staged = stagingStore.dictionaryRepresentation()
         if (staged.keys.none { (it as? String)?.startsWith(SectionPrefix) == true }) return
         val current = defaults.persistentDomainForName(domainName)?.keys?.mapNotNull { it as? String }.orEmpty()
@@ -598,7 +617,7 @@ actual object AccountService {
     private fun requireToken(): String = token ?: throw AccountException("unauthorized")
 
     private fun clearSession() {
-        listOf("token", "user_id", "username", "is_admin").forEach { accountStore.removeObjectForKey(it) }
+        listOf("token", "user_id", "username", "is_admin", "remote_key").forEach { accountStore.removeObjectForKey(it) }
         _session.value = null
     }
 

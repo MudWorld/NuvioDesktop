@@ -150,7 +150,7 @@ final class TVRemoteModel: ObservableObject {
         for result in results {
             guard case let .service(name, _, _, _) = result.endpoint,
                   let range = name.range(of: " #", options: .backwards),
-                  String(name[range.upperBound...]) == accountID else { continue }
+                  String(name[range.upperBound...]).hasPrefix(accountID) else { continue }
             found.append(TV(id: name, name: String(name[..<range.lowerBound]), endpoint: result.endpoint))
         }
         tvs = found.sorted { $0.name < $1.name }
@@ -194,6 +194,8 @@ final class TVRemoteModel: ObservableObject {
             let authenticated = receivedState
             disconnect()
             if !authenticated { keyMayBeStale() }
+        case .waiting:
+            message = "Keine Verbindung zum Apple TV. Erlaube „Lokales Netzwerk“ für WatchParty in den iPad-Einstellungen."
         default:
             break
         }
@@ -312,19 +314,23 @@ final class TVRemoteModel: ObservableObject {
         if let cached = defaults?.string(forKey: "remote_key"), cached.count >= 32 { return cached }
         let server = defaults?.string(forKey: "server_url").flatMap { $0.isEmpty ? nil : $0 } ?? "https://sync.mudworld.space"
 
-        func fetch() async -> String? {
-            guard let url = URL(string: server + "/v1/data/remote.key") else { return nil }
+        enum Lookup { case found(String), missing, failed }
+
+        func fetch() async -> Lookup {
+            guard let url = URL(string: server + "/v1/data/remote.key") else { return .failed }
             var request = URLRequest(url: url, timeoutInterval: 20)
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             guard let (data, response) = try? await URLSession.shared.data(for: request),
-                  (response as? HTTPURLResponse)?.statusCode == 200,
+                  let status = (response as? HTTPURLResponse)?.statusCode else { return .failed }
+            if status == 404 { return .missing }
+            guard status == 200,
                   let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let value = object["data"] as? String, value.count >= 32 else { return nil }
-            return value
+                  let value = object["data"] as? String, value.count >= 32 else { return .failed }
+            return .found(value)
         }
 
-        var secret = await fetch()
-        if secret == nil {
+        var lookup = await fetch()
+        if case .missing = lookup {
             let fresh = (0..<32).map { _ in String(format: "%02x", UInt8.random(in: 0...255)) }.joined()
             if let url = URL(string: server + "/v1/data/remote.key") {
                 var request = URLRequest(url: url, timeoutInterval: 20)
@@ -334,9 +340,10 @@ final class TVRemoteModel: ObservableObject {
                 request.httpBody = try? JSONSerialization.data(withJSONObject: ["data": fresh])
                 _ = try? await URLSession.shared.data(for: request)
             }
-            secret = await fetch()
+            lookup = await fetch()
         }
-        if let secret { defaults?.set(secret, forKey: "remote_key") }
+        guard case .found(let secret) = lookup else { return nil }
+        defaults?.set(secret, forKey: "remote_key")
         return secret
     }
 
