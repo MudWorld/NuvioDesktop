@@ -92,4 +92,11 @@
     <string name="account_error_generic">Etwas ist schiefgelaufen. Bitte versuch es noch einmal.</string>
     <string name="account_pending_restart">Neue Daten von einem anderen Gerät sind da.</string>
     <string name="account_restart_now">Jetzt neu starten und übernehmen</string>
+    <string name="livetv_play_on_tv">Auf Apple TV abspielen</string>
+    <string name="remote_title">Apple-TV-Fernbedienung</string>
+    <string name="account_import_pc">Daten vom PC übernehmen</string>
+    <string name="account_import_pc_title">Daten vom PC übernehmen?</string>
+    <string name="account_import_pc_message">Kopiert Addons, TMDB-Schlüssel, Debrid-Einstellungen, Sammlungen, Bibliothek, Gesehen-Liste und Fortschritt einmalig vom PC auf dieses iPad. Die Daten auf dem iPad werden ersetzt, der PC bleibt unverändert. Danach startet WatchParty neu.</string>
+    <string name="account_import_pc_done">%1$d Einträge übernommen. Starte WatchParty neu, um sie zu übernehmen.</string>
+    <string name="account_import_pc_empty">In diesem Konto wurden keine PC-Daten gefunden.</string>
 </resources>

@@ -36,6 +36,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.LiveTv
@@ -89,6 +90,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.nuvio.app.core.ui.NuvioAsyncImage
 import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.features.remote.RemoteControlBridge
 import com.nuvio.app.core.ui.secondaryClick
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -419,6 +421,15 @@ private fun LiveTVHeader(
                     tint = if (refreshing) tokens.colors.textMuted else tokens.colors.textPrimary,
                 )
             }
+            if (RemoteControlBridge.host != null) {
+                IconButton(onClick = { RemoteControlBridge.host?.openRemote() }) {
+                    Icon(
+                        Icons.Rounded.Cast,
+                        contentDescription = stringResource(Res.string.remote_title),
+                        tint = tokens.colors.textPrimary,
+                    )
+                }
+            }
             IconButton(onClick = onManagePlaylists) {
                 Icon(
                     Icons.Rounded.PlaylistAdd,
@@ -695,6 +706,16 @@ private fun LiveTVChannelCard(
                     onPlay()
                 },
             )
+            if (RemoteControlBridge.host != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(Res.string.livetv_play_on_tv)) },
+                    leadingIcon = { Icon(Icons.Rounded.Cast, contentDescription = null) },
+                    onClick = {
+                        menuOpen = false
+                        RemoteControlBridge.host?.playLiveChannel(channel.name, channel.streamUrl, channel.logoUrl, channel.group)
+                    },
+                )
+            }
             DropdownMenuItem(
                 text = { Text(stringResource(if (isFavorite) Res.string.livetv_favorite_remove else Res.string.livetv_favorite_add)) },
                 leadingIcon = { Icon(if (isFavorite) Icons.Rounded.StarBorder else Icons.Rounded.Star, contentDescription = null) },

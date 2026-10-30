@@ -47,6 +47,10 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_watchparty._tcp</string>
+	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>WatchParty verbindet sich mit Medienservern und deinem Apple TV im lokalen Netzwerk.</string>
 	<key>NSAppTransportSecurity</key>

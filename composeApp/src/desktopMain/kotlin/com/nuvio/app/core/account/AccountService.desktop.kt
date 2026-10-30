@@ -191,6 +191,10 @@ actual object AccountService {
         runCatching { pushChangedStores(force = false) }.onFailure(::recordError)
     }
 
+    actual val canImportFromDesktop: Boolean = false
+
+    actual suspend fun importFromDesktop(): Result<Int> = Result.failure(AccountException("unsupported"))
+
     actual fun requestSync() {
         val scheduler = executor ?: return
         if (token == null) return

@@ -44,6 +44,12 @@ expect object AccountService {
     suspend fun changePassword(oldPassword: String, newPassword: String): Result<Unit>
     suspend fun syncNow(): Result<Unit>
 
+    /** True where this device can copy the PC's data once (iPad); devices keep their own data. */
+    val canImportFromDesktop: Boolean
+
+    /** Copies addons, settings, library and progress from the PC data once; applied after a restart. */
+    suspend fun importFromDesktop(): Result<Int>
+
     /** Uploads changes a few seconds from now (playback paused, closed or switched). */
     fun requestSync()
     fun restartApp()

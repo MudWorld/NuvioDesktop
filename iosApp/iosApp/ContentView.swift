@@ -1320,6 +1320,8 @@ private struct NativeProfileSwitcherView: View {
 struct NativeNavContentView: View {
     @StateObject private var appCoordinator = AppNavigationCoordinator()
     @StateObject private var iconStore = NativeTabIconStore()
+    /// iPad tabs that were opened at least once; they stay alive like in a TabView.
+    @State private var visitedPadTabs: Set<NuvioAppTab> = [.home]
 
     private var usesNativeTabBar: Bool {
         guard UIDevice.current.userInterfaceIdiom == .phone else {
@@ -1384,6 +1386,31 @@ struct NativeNavContentView: View {
             }
         }
         .tint(Color(uiColor: iconStore.accentColor))
+    }
+
+    /// iPad: WatchParty draws its own floating tab bar (Compose). A SwiftUI TabView would add the
+    /// iPadOS tab bar on top of it, so the tabs are stacked here instead and switch without animation.
+    private var padTabs: some View {
+        ZStack {
+            ForEach(NuvioAppTab.allCases, id: \.self) { tab in
+                if visitedPadTabs.contains(tab) || appCoordinator.selectedTab == tab {
+                    let isSelected = appCoordinator.selectedTab == tab
+                    TabContentView(
+                        tab: tab,
+                        usesNativeTabBar: usesNativeTabBar,
+                        usesTabletFloatingTabBar: usesTabletFloatingTabBar,
+                        coordinator: appCoordinator.coordinator(for: tab),
+                        appCoordinator: appCoordinator
+                    )
+                    .opacity(isSelected ? 1 : 0)
+                    .allowsHitTesting(isSelected)
+                    .accessibilityHidden(!isSelected)
+                    .zIndex(isSelected ? 1 : 0)
+                }
+            }
+        }
+        .transaction { $0.animation = nil }
+        .onReceive(appCoordinator.$selectedTab) { visitedPadTabs.insert($0) }
     }
 
     @available(iOS 26.0, *)
@@ -1464,7 +1491,9 @@ struct NativeNavContentView: View {
         ZStack {
             Group {
                 if appCoordinator.isMainContentMounted {
-                    if #available(iOS 26.0, *), usesNativeTabBar {
+                    if usesTabletFloatingTabBar {
+                        padTabs
+                    } else if #available(iOS 26.0, *), usesNativeTabBar {
                         nativeTabs
                     } else {
                         legacyTabs

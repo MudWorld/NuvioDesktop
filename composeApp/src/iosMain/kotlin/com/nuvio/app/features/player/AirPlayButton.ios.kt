@@ -3,6 +3,14 @@
 package com.nuvio.app.features.player
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Cast
+import androidx.compose.material3.Icon
+import com.nuvio.app.features.remote.RemoteControlBridge
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.remote_title
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -43,7 +51,29 @@ private fun AirPlayRouteButton(buttonSize: Dp) {
     }
 }
 
+/** Opens the Apple TV remote sheet (Swift); only shown when the Swift host is installed. */
+@Composable
+private fun RemoteSheetButton(buttonSize: Dp) {
+    if (RemoteControlBridge.host == null) return
+    Box(
+        modifier = Modifier
+            .size(buttonSize)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.35f))
+            .clickable { RemoteControlBridge.host?.openRemote() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Cast,
+            contentDescription = stringResource(Res.string.remote_title),
+            tint = Color.White,
+            modifier = Modifier.size(buttonSize * 0.5f),
+        )
+    }
+}
+
 /** Called once from the iOS entry points before the first player opens. */
 fun installPlayerPlatformSlots() {
     PlayerPlatformSlots.airPlayButton = { size -> AirPlayRouteButton(size) }
+    PlayerPlatformSlots.remoteButton = { size -> RemoteSheetButton(size) }
 }

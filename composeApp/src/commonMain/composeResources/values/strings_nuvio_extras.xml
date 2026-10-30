@@ -92,4 +92,11 @@
     <string name="account_error_generic">Something went wrong. Please try again.</string>
     <string name="account_pending_restart">New data from another device is ready.</string>
     <string name="account_restart_now">Restart to apply</string>
+    <string name="livetv_play_on_tv">Play on Apple TV</string>
+    <string name="remote_title">Apple TV remote</string>
+    <string name="account_import_pc">Copy data from PC</string>
+    <string name="account_import_pc_title">Copy data from PC?</string>
+    <string name="account_import_pc_message">Copies addons, plugins settings, TMDB key, collections, library, watched and progress from your PC once onto this iPad. Data on this iPad is replaced; the PC is not changed. Afterwards WatchParty restarts.</string>
+    <string name="account_import_pc_done">%1$d entries copied. Restart WatchParty to apply them.</string>
+    <string name="account_import_pc_empty">No PC data found in this account.</string>
 </resources>

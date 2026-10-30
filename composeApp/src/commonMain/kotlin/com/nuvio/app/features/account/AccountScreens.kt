@@ -249,6 +249,7 @@ fun AccountSettingsPanel() {
     var showSignOut by remember { mutableStateOf(false) }
     var invite by remember { mutableStateOf<String?>(null) }
     var showPassword by remember { mutableStateOf(false) }
+    var showImport by remember { mutableStateOf(false) }
     val tokens = MaterialTheme.nuvio
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -305,6 +306,11 @@ fun AccountSettingsPanel() {
                     TextButton(onClick = { showPassword = true }) {
                         Text(stringResource(Res.string.account_change_password))
                     }
+                    if (AccountService.canImportFromDesktop) {
+                        TextButton(onClick = { showImport = true }) {
+                            Text(stringResource(Res.string.account_import_pc))
+                        }
+                    }
                     if (current.isAdmin) {
                         TextButton(onClick = {
                             scope.launch {
@@ -349,6 +355,23 @@ fun AccountSettingsPanel() {
             scope.launch { AccountService.signOut() }
         },
         onDismiss = { showSignOut = false },
+    )
+
+    NuvioStatusModal(
+        title = stringResource(Res.string.account_import_pc_title),
+        message = stringResource(Res.string.account_import_pc_message),
+        isVisible = showImport,
+        confirmText = stringResource(Res.string.account_import_pc),
+        dismissText = stringResource(Res.string.action_cancel),
+        onConfirm = {
+            showImport = false
+            scope.launch {
+                AccountService.importFromDesktop()
+                    .onSuccess { count -> NuvioToastController.show(getString(Res.string.account_import_pc_done, count)) }
+                    .onFailure { NuvioToastController.show(getString(errorMessage(it))) }
+            }
+        },
+        onDismiss = { showImport = false },
     )
 
     if (showPassword) {
@@ -410,5 +433,6 @@ private fun errorMessage(error: Throwable): StringResource = when ((error as? Ac
     "unauthorized" -> Res.string.account_error_session
     "account_full" -> Res.string.account_error_full
     "network" -> Res.string.account_error_network
+    "nothing_to_import" -> Res.string.account_import_pc_empty
     else -> Res.string.account_error_generic
 }

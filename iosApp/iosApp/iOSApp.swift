@@ -9,6 +9,7 @@ struct iOSApp: App {
         // Apply account data fetched on the last run before any store reads UserDefaults.
         AccountService.shared.prepareOnLaunch()
         AirPlayButton_iosKt.installPlayerPlatformSlots()
+        RemoteControlBridge.shared.host = RemoteHost.shared
     }
 
     var body: some Scene {
