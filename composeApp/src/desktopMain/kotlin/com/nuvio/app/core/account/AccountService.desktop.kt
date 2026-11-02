@@ -89,6 +89,9 @@ actual object AccountService {
     private val _syncStatus = MutableStateFlow(AccountSyncStatus())
     actual val syncStatus: StateFlow<AccountSyncStatus> = _syncStatus.asStateFlow()
 
+    /** The desktop build lives on its own branch; here it only has to compile. */
+    actual val needsSyncSignIn: StateFlow<Boolean> = MutableStateFlow(false)
+
     actual val serverUrl: String
         get() = accountStore.getString("server_url")?.takeIf { it.isNotBlank() } ?: DefaultServerUrl
 

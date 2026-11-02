@@ -96,7 +96,9 @@
     <string name="remote_title">Apple-TV-Fernbedienung</string>
     <string name="account_import_pc">Daten vom PC übernehmen</string>
     <string name="account_import_pc_title">Daten vom PC übernehmen?</string>
-    <string name="account_import_pc_message">Kopiert Addons, TMDB-Schlüssel, Debrid-Einstellungen, Sammlungen, Bibliothek, Gesehen-Liste und Fortschritt einmalig vom PC auf dieses iPad. Die Daten auf dem iPad werden ersetzt, der PC bleibt unverändert. Danach startet WatchParty neu.</string>
+    <string name="account_import_pc_message">Kopiert TMDB-Schlüssel, Debrid-, Player- und Live-TV-Einstellungen einmalig vom PC auf dieses iPad. Profile, Addons, Sammlungen, Bibliothek, Gesehen und Fortschritt gleicht der Profil-Sync ohnehin ab. Die Daten auf dem iPad werden ersetzt, der PC bleibt unverändert. Danach startet WatchParty neu.</string>
     <string name="account_import_pc_done">%1$d Einträge übernommen. Starte WatchParty neu, um sie zu übernehmen.</string>
     <string name="account_import_pc_empty">In diesem Konto wurden keine PC-Daten gefunden.</string>
+    <string name="account_sync_sign_in_needed">Neu: Profile wie bei Netflix, abgeglichen mit Fernseher, iPad und Apple TV. Bitte melde dich einmal neu an.</string>
+    <string name="account_error_sync_sign_in">Anmeldung für den Profil-Sync fehlgeschlagen. Bitte versuche es erneut.</string>
 </resources>

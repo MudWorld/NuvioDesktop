@@ -52,10 +52,12 @@ object ServerConfigurationRepository {
 internal fun officialConfiguration() = ServerConfiguration(
     backendUrl = SupabaseConfig.URL.trim().trimEnd('/'),
     publishableKey = SupabaseConfig.ANON_KEY.trim(),
+    // WatchParty: the built-in server is sync.mudworld.space, which has no TV code login and
+    // no realtime channel for Nuvio's own watch party.
     capabilities = ServerCapabilities(
         emailPasswordAuth = true,
-        tvLogin = true,
-        watchParty = true,
+        tvLogin = false,
+        watchParty = false,
     ),
     isCustom = false,
     fallbackBackendUrl = SupabaseConfig.FALLBACK_URL.trim().trimEnd('/').takeIf { it.isNotBlank() },

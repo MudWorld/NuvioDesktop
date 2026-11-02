@@ -3,7 +3,7 @@
 package com.nuvio.app.core.account
 
 import com.nuvio.app.core.auth.AuthRepository
-import com.nuvio.app.core.auth.AuthState
+import com.nuvio.app.core.auth.AuthStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
 import io.ktor.client.plugins.HttpTimeout
@@ -60,6 +60,11 @@ import platform.posix.exit
  * key and uploaded as sections `ipad.d0` … `ipad.d15`; the iPad never reads or writes the
  * `pc.*` (desktop) or `tv.*` (Apple TV) sections. Data fetched from the server is staged
  * in a separate suite and applied on the next launch, before any store reads it.
+ *
+ * Profiles and everything kept per profile (continue watching, watched, library, addons,
+ * plugins, collections) go through the app's own Nuvio sync, which the same server answers.
+ * Signing in here also signs in that sync. Those keys still travel in the `ipad.*` buckets as a
+ * backup but are never written back from them or from the PC copy.
  */
 actual object AccountService {
     actual val supported: Boolean = true
@@ -73,12 +78,26 @@ actual object AccountService {
     private const val ImportKey = "import.pc"
     private const val ImportDoneKey = "pc_import_done"
 
+    /** Nuvio sync signs in with an e-mail; WatchParty accounts are user names. */
+    private const val AccountEmailDomain = "watchparty.local"
+    private const val NuvioSyncSignedInKey = "nuvio_sync_signed_in"
+
     /** Device-local state, caches and system keys that must not follow the account. */
     private val excludedPrefixes = listOf(
         "NS", "Apple", "AK", "PK", "com.apple.", "WebKit", "INNext", "MSV",
         "sync_client", "server_configuration", "server_credentials", "member_access",
         "sentry", "app_icon", "pending_external_playback", "downloads",
         "stream_link_cache", "binge_group_cache", "continue_watching_enrichment",
+        // Sign-in state of the Nuvio sync stays on this iPad.
+        "anonymous_user_id", "session", "supabase",
+    )
+
+    /** Kept by the Nuvio sync per profile; a bucket or PC copy must not overwrite them. */
+    private val nuvioSyncedPrefixes = listOf(
+        "profile_payload", "profile_pin_cache_", "avatar_catalog_payload",
+        "installed_manifest_urls_", "installed_manifest_enabled_states_", "plugins_state_",
+        "collections_payload", "catalog_settings_payload",
+        "watch_progress_payload", "watched_payload_", "library_payload_",
     )
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -118,6 +137,9 @@ actual object AccountService {
     private val token: String?
         get() = accountStore.stringForKey("token")?.takeIf { it.isNotBlank() }
 
+    private val _needsSyncSignIn = MutableStateFlow(false)
+    actual val needsSyncSignIn: StateFlow<Boolean> = _needsSyncSignIn.asStateFlow()
+
     private val domainName: String
         get() = NSBundle.mainBundle.bundleIdentifier ?: "space.mudworld.watchparty.ipad"
 
@@ -129,6 +151,12 @@ actual object AccountService {
         prepared = true
         applyStagedBuckets()
         loadSession()
+        if (_session.value != null && !accountStore.boolForKey(NuvioSyncSignedInKey)) {
+            // Signed in before the Nuvio sync came along. The password is not stored, so the
+            // account panel asks for it once more; local data stays.
+            clearSession()
+            _needsSyncSignIn.value = true
+        }
         importDesktopDataIfEmpty()
         startPushLoop()
     }
@@ -190,32 +218,42 @@ actual object AccountService {
             accountStore.removeObjectForKey("hashes")
             accountStore.removeObjectForKey("remote_key")
             accountStore.removeObjectForKey(ImportDoneKey)
+            signInNuvioSync(sessionJson.string("username"), fields.getValue("password"))
             loadSession()
+            _needsSyncSignIn.value = false
 
             val remote = listRemoteSections().filterKeys { it.startsWith(SectionPrefix) }
             if (remote.isEmpty() && !hasLocalUserData() && runCatching { stageDesktopImport() }.getOrDefault(0) > 0) {
-                // First iPad of this account: start from a copy of the PC's data (applied after the restart).
-                if (AuthRepository.state.value !is AuthState.Authenticated) {
-                    AuthRepository.signInAnonymously()
-                }
+                // First iPad of this account: start from a copy of the PC's settings (applied after the restart).
                 AccountSignInOutcome.RestartRequired
             } else if (remote.isEmpty()) {
                 pushChangedBuckets(force = true)
-                if (AuthRepository.state.value !is AuthState.Authenticated) {
-                    AuthRepository.signInAnonymously()
-                }
-                AccountSignInOutcome.UploadedLocalData
+                // The app starts over signed in to the Nuvio sync, which then pulls the profiles.
+                AccountSignInOutcome.RestartRequired
             } else {
                 pullNewerSections(forceAll = true)
                 AccountSignInOutcome.RestartRequired
             }
         }.onFailure(::recordError)
 
+    /**
+     * Signs in the app's Nuvio sync with the same account. The anonymous local id is dropped
+     * afterwards, so the next launch picks up the signed-in session.
+     */
+    private suspend fun signInNuvioSync(username: String, password: String) {
+        AuthRepository.signInWithEmail("${username.lowercase()}@$AccountEmailDomain", password)
+            .getOrElse { throw AccountException("sync_sign_in_failed") }
+        AuthStorage.clearAnonymousUserId()
+        accountStore.setBool(true, forKey = NuvioSyncSignedInKey)
+        accountStore.synchronize()
+    }
+
     actual suspend fun signOut() {
         if (token != null) {
             runCatching { pushChangedBuckets(force = false) }
             runCatching { request(HttpMethod.Post, "/v1/logout", "{}", token) }
         }
+        runCatching { AuthRepository.signOut() }
         defaults.removePersistentDomainForName(domainName)
         defaults.synchronize()
         clearSuite(accountStore)
@@ -480,6 +518,8 @@ actual object AccountService {
 
     private fun isSyncable(key: String): Boolean = excludedPrefixes.none { key.startsWith(it) }
 
+    private fun isNuvioSynced(key: String): Boolean = nuvioSyncedPrefixes.any { key.startsWith(it) }
+
     /** Current UserDefaults content, grouped per bucket as sorted JSON objects. */
     private fun snapshotBuckets(): Map<Int, String> {
         val domain = defaults.persistentDomainForName(domainName) ?: emptyMap<Any?, Any?>()
@@ -556,7 +596,7 @@ actual object AccountService {
         val raw = stagingStore.stringForKey(ImportKey) ?: return
         runCatching { json.parseToJsonElement(raw).jsonObject }.getOrNull()?.forEach { (key, element) ->
             val value = element.jsonPrimitive.contentOrNull ?: return@forEach
-            if (isSyncable(key)) defaults.setObject(value, forKey = key)
+            if (isSyncable(key) && !isNuvioSynced(key)) defaults.setObject(value, forKey = key)
         }
         stagingStore.removeObjectForKey(ImportKey)
         accountStore.setBool(true, forKey = ImportDoneKey)
@@ -579,10 +619,10 @@ actual object AccountService {
             val bucket = section.removePrefix(SectionPrefix).toIntOrNull() ?: continue
             val content = rawContent as? String ?: continue
             val values = runCatching { json.parseToJsonElement(content).jsonObject }.getOrNull() ?: continue
-            current.filter { isSyncable(it) && bucketOf(it) == bucket && it !in values }
+            current.filter { isSyncable(it) && !isNuvioSynced(it) && bucketOf(it) == bucket && it !in values }
                 .forEach { defaults.removeObjectForKey(it) }
             for ((key, element) in values) {
-                if (!isSyncable(key) || bucketOf(key) != bucket) continue
+                if (!isSyncable(key) || isNuvioSynced(key) || bucketOf(key) != bucket) continue
                 val value = fromJson(element)
                 if (value == null) defaults.removeObjectForKey(key) else defaults.setObject(value, forKey = key)
             }
@@ -662,7 +702,8 @@ actual object AccountService {
     private fun requireToken(): String = token ?: throw AccountException("unauthorized")
 
     private fun clearSession() {
-        listOf("token", "user_id", "username", "is_admin", "remote_key").forEach { accountStore.removeObjectForKey(it) }
+        listOf("token", "user_id", "username", "is_admin", "remote_key", NuvioSyncSignedInKey)
+            .forEach { accountStore.removeObjectForKey(it) }
         _session.value = null
     }
 

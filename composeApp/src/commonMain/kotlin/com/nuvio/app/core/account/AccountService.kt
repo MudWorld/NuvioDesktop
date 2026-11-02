@@ -35,6 +35,9 @@ expect object AccountService {
     val session: StateFlow<AccountSession?>
     val syncStatus: StateFlow<AccountSyncStatus>
 
+    /** Signed in before the Nuvio sync existed: sign in once more so profiles sync too. */
+    val needsSyncSignIn: StateFlow<Boolean>
+
     suspend fun signIn(username: String, password: String): Result<AccountSignInOutcome>
     suspend fun register(username: String, password: String, invite: String): Result<AccountSignInOutcome>
 

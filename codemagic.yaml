@@ -13,6 +13,10 @@ workflows:
       vars:
         IOS_CONFIGURATION: Release
         GRADLE_OPTS: -Dfile.encoding=UTF-8
+        # The WatchParty server answers the app's own Nuvio sync. The anon key is public: every
+        # app request carries it, and it only allows signing in with an account.
+        NUVIO_SUPABASE_URL: https://sync.mudworld.space
+        NUVIO_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJudXZpby13YXRjaHBhcnR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMjU2MDAsImV4cCI6MjM5Nzk0NTYwMH0.GRt8FY_cs7h0KOysW54JQ4Wzuy4LEuLwPJlChCcQg9o
         # linkReleaseFrameworkIosArm64 runs inside the Gradle JVM and needs far more
         # than 4.5 GB; the Kotlin daemon only compiles klibs and fits in 3 GB.
         KOTLIN_DAEMON_JVMARGS: -Xmx3072M

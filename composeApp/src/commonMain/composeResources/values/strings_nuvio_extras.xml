@@ -96,7 +96,9 @@
     <string name="remote_title">Apple TV remote</string>
     <string name="account_import_pc">Copy data from PC</string>
     <string name="account_import_pc_title">Copy data from PC?</string>
-    <string name="account_import_pc_message">Copies addons, plugins settings, TMDB key, collections, library, watched and progress from your PC once onto this iPad. Data on this iPad is replaced; the PC is not changed. Afterwards WatchParty restarts.</string>
+    <string name="account_import_pc_message">Copies the TMDB key and debrid, player and Live TV settings from your PC once onto this iPad. Profiles, addons, collections, library, watched and progress already come through the profile sync. Data on this iPad is replaced; the PC is not changed. Afterwards WatchParty restarts.</string>
     <string name="account_import_pc_done">%1$d entries copied. Restart WatchParty to apply them.</string>
     <string name="account_import_pc_empty">No PC data found in this account.</string>
+    <string name="account_sync_sign_in_needed">New: profiles like on Netflix, synced with the TV, iPad and Apple TV. Please sign in once more.</string>
+    <string name="account_error_sync_sign_in">Signing in to the profile sync failed. Please try again.</string>
 </resources>
