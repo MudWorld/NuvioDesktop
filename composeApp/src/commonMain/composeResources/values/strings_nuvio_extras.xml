@@ -92,4 +92,6 @@
     <string name="account_error_generic">Something went wrong. Please try again.</string>
     <string name="account_pending_restart">New data from another device is ready.</string>
     <string name="account_restart_now">Restart to apply</string>
+    <string name="account_sync_sign_in_needed">New: profiles like on Netflix, synced with the TV, iPad and Apple TV. Please sign in once more.</string>
+    <string name="account_error_sync_sign_in">Signing in to the profile sync failed. Please try again.</string>
 </resources>

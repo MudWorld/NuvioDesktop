@@ -1,7 +1,7 @@
 name: Build Windows MSI (fork)
 
-# Manual build of the fork for personal use. Needs no upstream secrets: the app
-# runs without a Nuvio account and takes the TMDB key from its own settings.
+# Manual build of the fork for personal use. Needs no upstream secrets: accounts and
+# sync go to the WatchParty server, the TMDB key comes from the app's own settings.
 # Optional secret NUVIO_LOCAL_PROPERTIES holds a local.properties file
 # (e.g. your own TRAKT_CLIENT_ID / TRAKT_CLIENT_SECRET).
 
@@ -19,6 +19,10 @@ jobs:
     runs-on: windows-2022
     env:
       WEBVIEW2_VERSION: 1.0.4078.44
+      # The WatchParty server answers the app's own Nuvio sync. The anon key is public: every
+      # app request carries it, and it only allows signing in with an account.
+      NUVIO_SUPABASE_URL: https://sync.mudworld.space
+      NUVIO_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJudXZpby13YXRjaHBhcnR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMjU2MDAsImV4cCI6MjM5Nzk0NTYwMH0.GRt8FY_cs7h0KOysW54JQ4Wzuy4LEuLwPJlChCcQg9o
       LOCAL_PROPERTIES: ${{ secrets.NUVIO_LOCAL_PROPERTIES }}
 
     steps:

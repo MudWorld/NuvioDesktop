@@ -244,6 +244,7 @@ private fun ModeChip(label: String, selected: Boolean, onClick: () -> Unit) {
 fun AccountSettingsPanel() {
     val session by AccountService.session.collectAsStateWithLifecycle()
     val status by AccountService.syncStatus.collectAsStateWithLifecycle()
+    val needsSyncSignIn by AccountService.needsSyncSignIn.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
     var showSignOut by remember { mutableStateOf(false) }
@@ -263,9 +264,11 @@ fun AccountSettingsPanel() {
             val current = session
             if (current == null) {
                 Text(
-                    text = stringResource(Res.string.account_not_signed_in),
+                    text = stringResource(
+                        if (needsSyncSignIn) Res.string.account_sync_sign_in_needed else Res.string.account_not_signed_in,
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = tokens.colors.textSecondary,
+                    color = if (needsSyncSignIn) tokens.colors.accent else tokens.colors.textSecondary,
                 )
                 Spacer(Modifier.height(12.dp))
                 AccountForm()
@@ -410,5 +413,6 @@ private fun errorMessage(error: Throwable): StringResource = when ((error as? Ac
     "unauthorized" -> Res.string.account_error_session
     "account_full" -> Res.string.account_error_full
     "network" -> Res.string.account_error_network
+    "sync_sign_in_failed" -> Res.string.account_error_sync_sign_in
     else -> Res.string.account_error_generic
 }

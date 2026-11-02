@@ -92,4 +92,6 @@
     <string name="account_error_generic">Etwas ist schiefgelaufen. Bitte versuch es noch einmal.</string>
     <string name="account_pending_restart">Neue Daten von einem anderen Gerät sind da.</string>
     <string name="account_restart_now">Jetzt neu starten und übernehmen</string>
+    <string name="account_sync_sign_in_needed">Neu: Profile wie bei Netflix, abgeglichen mit Fernseher, iPad und Apple TV. Bitte melde dich einmal neu an.</string>
+    <string name="account_error_sync_sign_in">Anmeldung für den Profil-Sync fehlgeschlagen. Bitte versuche es erneut.</string>
 </resources>

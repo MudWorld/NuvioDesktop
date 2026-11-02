@@ -1,7 +1,7 @@
 package com.nuvio.app.core.account
 
 import com.nuvio.app.core.auth.AuthRepository
-import com.nuvio.app.core.auth.AuthState
+import com.nuvio.app.core.auth.AuthStorage
 import com.nuvio.app.core.storage.DesktopStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +39,11 @@ import kotlin.system.exitProcess
  * uploaded as section `pc.<name>`. On start-up, newer sections from the server are
  * written before any store is opened. Data fetched while the app runs is staged and
  * applied on the next start, so in-memory stores can never overwrite it.
+ *
+ * Profiles and everything kept per profile (continue watching, watched, library, addons,
+ * plugins, collections) go through the app's own Nuvio sync, which the same server answers.
+ * Signing in here also signs in that sync. Those stores are still uploaded as `pc.*` (other
+ * devices read the PC's sidebar and addons from there) but are never pulled back.
  */
 actual object AccountService {
     actual val supported: Boolean = true
@@ -48,9 +53,14 @@ actual object AccountService {
     private const val PushIntervalSeconds = 600L
     private const val RequestDebounceSeconds = 5L
 
+    /** Nuvio sync signs in with an e-mail; WatchParty accounts are user names. */
+    private const val AccountEmailDomain = "watchparty.local"
+    private const val NuvioSyncSignedInKey = "nuvio_sync_signed_in"
+
     /** Device-local files, caches and server/session state that must not follow the account. */
     private val excludedStores = setOf(
         "nuvio_account",
+        "nuvio_auth",
         "nuvio_window_state",
         "nuvio_sync_client_identity",
         "nuvio_player_runtime",
@@ -66,6 +76,20 @@ actual object AccountService {
         "nuvio_updater",
         "server_configuration",
         "server_credentials",
+    )
+
+    /** Kept by the Nuvio sync per profile; a `pc.*` copy must not overwrite them. */
+    private val nuvioSyncedStores = setOf(
+        "nuvio_profiles",
+        "nuvio_profile_pin_cache",
+        "nuvio_avatars",
+        "nuvio_addons",
+        "nuvio_plugins",
+        "nuvio_collections",
+        "nuvio_home_catalog_settings",
+        "nuvio_watch_progress",
+        "nuvio_watched",
+        "nuvio_library",
     )
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -95,6 +119,9 @@ actual object AccountService {
     private val token: String?
         get() = accountStore.getString("token")?.takeIf { it.isNotBlank() }
 
+    private val _needsSyncSignIn = MutableStateFlow(false)
+    actual val needsSyncSignIn: StateFlow<Boolean> = _needsSyncSignIn.asStateFlow()
+
     // ---- start-up --------------------------------------------------------
 
     /**
@@ -107,6 +134,13 @@ actual object AccountService {
         if (token != null) {
             runCatching { pullNewerSections(directToStores = true) }
                 .onFailure { recordError(it) }
+        }
+        if (token != null && accountStore.getBoolean(NuvioSyncSignedInKey) != true) {
+            // Signed in before the Nuvio sync came along. The password is not stored, so the
+            // account panel asks for it once more; local data stays.
+            runCatching { pushChangedStores(force = false) }
+            clearSession()
+            _needsSyncSignIn.value = true
         }
         startPushLoop()
     }
@@ -143,27 +177,38 @@ actual object AccountService {
                 accountStore.putBoolean("is_admin", sessionJson["isAdmin"]?.jsonPrimitive?.booleanOrNull == true)
                 accountStore.remove("versions")
                 accountStore.remove("hashes")
+                signInNuvioSync(sessionJson.string("username"), fields.getValue("password"))
                 loadSession()
+                _needsSyncSignIn.value = false
 
                 val remote = listRemoteSections().filterKeys { it.startsWith(SectionPrefix) }
                 if (remote.isEmpty()) {
                     pushChangedStores(force = true)
-                    if (AuthRepository.state.value !is AuthState.Authenticated) {
-                        AuthRepository.signInAnonymously()
-                    }
-                    AccountSignInOutcome.UploadedLocalData
                 } else {
                     pullNewerSections(directToStores = false, forceAll = true)
-                    AccountSignInOutcome.RestartRequired
                 }
+                // The app starts over signed in to the Nuvio sync, which then pulls the profiles.
+                AccountSignInOutcome.RestartRequired
             }.onFailure(::recordError)
         }
+
+    /**
+     * Signs in the app's Nuvio sync with the same account. The anonymous local id is dropped
+     * afterwards, so the next start picks up the signed-in session.
+     */
+    private suspend fun signInNuvioSync(username: String, password: String) {
+        AuthRepository.signInWithEmail("${username.lowercase()}@$AccountEmailDomain", password)
+            .getOrElse { throw AccountException("sync_sign_in_failed") }
+        AuthStorage.clearAnonymousUserId()
+        accountStore.putBoolean(NuvioSyncSignedInKey, true)
+    }
 
     actual suspend fun signOut() = withContext(Dispatchers.IO) {
         if (token != null) {
             runCatching { pushChangedStores(force = false) }
             runCatching { request("POST", "/v1/logout", "{}", token) }
         }
+        runCatching { AuthRepository.signOut() }
         suppressShutdownPush = true
         DesktopStorage.wipe()
         runCatching { stagingDir.toFile().deleteRecursively() }
@@ -293,7 +338,8 @@ actual object AccountService {
         for ((section, updatedAt) in remote) {
             if (!section.startsWith(SectionPrefix)) continue
             val storeName = section.removePrefix(SectionPrefix)
-            if (storeName in excludedStores || !storeName.matches(Regex("[a-z0-9_]+"))) continue
+            if (storeName in excludedStores || storeName in nuvioSyncedStores) continue
+            if (!storeName.matches(Regex("[a-z0-9_]+"))) continue
             val known = versions[storeName]?.toLongOrNull() ?: 0L
             if (!forceAll && updatedAt <= known) continue
             val sectionJson = json.parseToJsonElement(request("GET", "/v1/data/$section", null, authToken)).jsonObject
@@ -356,7 +402,7 @@ actual object AccountService {
     private fun requireToken(): String = token ?: throw AccountException("unauthorized")
 
     private fun clearSession() {
-        listOf("token", "user_id", "username", "is_admin").forEach(accountStore::remove)
+        listOf("token", "user_id", "username", "is_admin", NuvioSyncSignedInKey).forEach(accountStore::remove)
         _session.value = null
     }
 

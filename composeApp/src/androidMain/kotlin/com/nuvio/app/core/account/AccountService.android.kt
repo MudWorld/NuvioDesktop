@@ -9,6 +9,7 @@ actual object AccountService {
     actual val serverUrl: String = ""
     actual val session: StateFlow<AccountSession?> = MutableStateFlow(null)
     actual val syncStatus: StateFlow<AccountSyncStatus> = MutableStateFlow(AccountSyncStatus())
+    actual val needsSyncSignIn: StateFlow<Boolean> = MutableStateFlow(false)
 
     actual suspend fun signIn(username: String, password: String): Result<AccountSignInOutcome> =
         Result.failure(AccountException("unsupported"))
