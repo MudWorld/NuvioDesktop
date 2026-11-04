@@ -1260,4 +1260,8 @@
     <string name="stream_info_subtitle_source_addon">Addon</string>
     <string name="stream_info_subtitle_source_embedded">Eingebettet</string>
     <string name="stream_info_player_engine">Player Engine</string>
+    <string name="settings_playback_stream_language">Stream-Sprache</string>
+    <string name="settings_playback_stream_language_all">Alle Sprachen</string>
+    <string name="settings_playback_stream_language_german_subtitled">Deutsch und deutsche Untertitel</string>
+    <string name="settings_playback_stream_language_german_only">Nur Deutsch</string>
 </resources>

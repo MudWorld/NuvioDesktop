@@ -75,6 +75,7 @@ actual object PlayerSettingsStorage {
     private const val streamAutoPlaySelectedAddonsKey = "stream_auto_play_selected_addons"
     private const val streamAutoPlaySelectedPluginsKey = "stream_auto_play_selected_plugins"
     private const val streamAutoPlayRegexKey = "stream_auto_play_regex"
+    private const val streamLanguageFilterKey = "stream_language_filter"
     private const val streamAutoPlayTimeoutSecondsKey = "stream_auto_play_timeout_seconds"
     private const val skipIntroEnabledKey = "skip_intro_enabled"
     private const val autoSkipMovieCreditsKey = "auto_skip_movie_credits"
@@ -156,6 +157,7 @@ actual object PlayerSettingsStorage {
         streamAutoPlaySelectedAddonsKey,
         streamAutoPlaySelectedPluginsKey,
         streamAutoPlayRegexKey,
+        streamLanguageFilterKey,
         streamAutoPlayTimeoutSecondsKey,
         skipIntroEnabledKey,
         autoSkipMovieCreditsKey,
@@ -949,6 +951,16 @@ actual object PlayerSettingsStorage {
             ?.apply()
     }
 
+    actual fun loadStreamLanguageFilter(): String? =
+        preferences?.getString(ProfileScopedKey.of(streamLanguageFilterKey), null)
+
+    actual fun saveStreamLanguageFilter(filter: String) {
+        preferences
+            ?.edit()
+            ?.putString(ProfileScopedKey.of(streamLanguageFilterKey), filter)
+            ?.apply()
+    }
+
     actual fun loadStreamAutoPlayTimeoutSeconds(): Int? =
         preferences?.let { sharedPreferences ->
             val key = ProfileScopedKey.of(streamAutoPlayTimeoutSecondsKey)
@@ -1423,6 +1435,7 @@ actual object PlayerSettingsStorage {
         loadStreamAutoPlaySelectedAddons()?.let { put(streamAutoPlaySelectedAddonsKey, encodeSyncStringSet(it)) }
         loadStreamAutoPlaySelectedPlugins()?.let { put(streamAutoPlaySelectedPluginsKey, encodeSyncStringSet(it)) }
         loadStreamAutoPlayRegex()?.let { put(streamAutoPlayRegexKey, encodeSyncString(it)) }
+        loadStreamLanguageFilter()?.let { put(streamLanguageFilterKey, encodeSyncString(it)) }
         loadStreamAutoPlayTimeoutSeconds()?.let { put(streamAutoPlayTimeoutSecondsKey, encodeSyncInt(it)) }
         loadSkipIntroEnabled()?.let { put(skipIntroEnabledKey, encodeSyncBoolean(it)) }
         loadAutoSkipMovieCredits()?.let { put(autoSkipMovieCreditsKey, encodeSyncBoolean(it)) }
@@ -1506,6 +1519,7 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncStringSet(streamAutoPlaySelectedAddonsKey)?.let(::saveStreamAutoPlaySelectedAddons)
         payload.decodeSyncStringSet(streamAutoPlaySelectedPluginsKey)?.let(::saveStreamAutoPlaySelectedAddons)
         payload.decodeSyncString(streamAutoPlayRegexKey)?.let(::saveStreamAutoPlayRegex)
+        payload.decodeSyncString(streamLanguageFilterKey)?.let(::saveStreamLanguageFilter)
         payload.decodeSyncInt(streamAutoPlayTimeoutSecondsKey)?.let(::saveStreamAutoPlayTimeoutSeconds)
         payload.decodeSyncBoolean(skipIntroEnabledKey)?.let(::saveSkipIntroEnabled)
         payload.decodeSyncBoolean(autoSkipMovieCreditsKey)?.let(::saveAutoSkipMovieCredits)

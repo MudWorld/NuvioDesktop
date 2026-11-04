@@ -6,6 +6,7 @@ import com.nuvio.app.features.player.skip.AutoSkipSegmentType
 import com.nuvio.app.features.player.skip.NextEpisodeThresholdMode
 import com.nuvio.app.features.streams.StreamAutoPlayMode
 import com.nuvio.app.features.streams.StreamAutoPlaySource
+import com.nuvio.app.features.streams.StreamLanguageFilter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -78,6 +79,7 @@ data class PlayerSettingsUiState(
     val streamAutoPlaySelectedAddons: Set<String> = emptySet(),
     val streamAutoPlaySelectedPlugins: Set<String> = emptySet(),
     val streamAutoPlayRegex: String = "",
+    val streamLanguageFilter: StreamLanguageFilter = StreamLanguageFilter.ALL,
     val streamAutoPlayTimeoutSeconds: Int = 3,
     val skipIntroEnabled: Boolean = true,
     val autoSkipSegmentTypes: Set<AutoSkipSegmentType> = emptySet(),
@@ -163,6 +165,7 @@ object PlayerSettingsRepository {
     private var streamAutoPlaySelectedAddons: Set<String> = emptySet()
     private var streamAutoPlaySelectedPlugins: Set<String> = emptySet()
     private var streamAutoPlayRegex = ""
+    private var streamLanguageFilter = StreamLanguageFilter.ALL
     private var streamAutoPlayTimeoutSeconds = 3
     private var skipIntroEnabled = true
     private var autoSkipSegmentTypes: Set<AutoSkipSegmentType> = emptySet()
@@ -254,6 +257,7 @@ object PlayerSettingsRepository {
         streamAutoPlaySelectedAddons = emptySet()
         streamAutoPlaySelectedPlugins = emptySet()
         streamAutoPlayRegex = ""
+        streamLanguageFilter = StreamLanguageFilter.ALL
         streamAutoPlayTimeoutSeconds = 3
         skipIntroEnabled = true
         autoSkipSegmentTypes = emptySet()
@@ -406,6 +410,7 @@ object PlayerSettingsRepository {
             }
         }
         streamAutoPlayRegex = PlayerSettingsStorage.loadStreamAutoPlayRegex() ?: ""
+        streamLanguageFilter = StreamLanguageFilter.fromStorage(PlayerSettingsStorage.loadStreamLanguageFilter())
         streamAutoPlayTimeoutSeconds = PlayerSettingsStorage.loadStreamAutoPlayTimeoutSeconds() ?: 3
         // Legacy migration: 11 was the old sentinel for "unlimited"
         if (streamAutoPlayTimeoutSeconds == 11) {
@@ -886,6 +891,14 @@ object PlayerSettingsRepository {
         PlayerSettingsStorage.saveStreamAutoPlayRegex(regex)
     }
 
+    fun setStreamLanguageFilter(filter: StreamLanguageFilter) {
+        ensureLoaded()
+        if (streamLanguageFilter == filter) return
+        streamLanguageFilter = filter
+        publish()
+        PlayerSettingsStorage.saveStreamLanguageFilter(filter.name)
+    }
+
     fun setStreamAutoPlayTimeoutSeconds(seconds: Int) {
         ensureLoaded()
         if (streamAutoPlayTimeoutSeconds == seconds) return
@@ -1250,6 +1263,7 @@ object PlayerSettingsRepository {
             streamAutoPlaySelectedAddons = streamAutoPlaySelectedAddons,
             streamAutoPlaySelectedPlugins = streamAutoPlaySelectedPlugins,
             streamAutoPlayRegex = streamAutoPlayRegex,
+            streamLanguageFilter = streamLanguageFilter,
             streamAutoPlayTimeoutSeconds = streamAutoPlayTimeoutSeconds,
             skipIntroEnabled = skipIntroEnabled,
             autoSkipSegmentTypes = autoSkipSegmentTypes,

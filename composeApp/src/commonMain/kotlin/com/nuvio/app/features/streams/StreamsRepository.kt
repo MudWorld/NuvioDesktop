@@ -358,10 +358,12 @@ object StreamsRepository {
             }
 
             fun presentStreamGroup(group: AddonStreamGroup): AddonStreamGroup {
+                // WatchParty: drop streams in other languages before the list and auto-play see them
+                val languageGroup = StreamLanguageClassifier.apply(group, playerSettings.streamLanguageFilter)
                 val badgeGroup = StreamBadgePresentation.apply(
-                    groups = listOf(group),
+                    groups = listOf(languageGroup),
                     rules = streamBadgeRules,
-                ).firstOrNull() ?: group
+                ).firstOrNull() ?: languageGroup
                 return DebridStreamPresentation.apply(
                     groups = listOf(badgeGroup),
                     settings = debridSettings,

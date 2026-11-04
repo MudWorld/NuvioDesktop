@@ -115,6 +115,8 @@ internal expect object PlayerSettingsStorage {
     fun saveStreamAutoPlaySelectedPlugins(plugins: Set<String>)
     fun loadStreamAutoPlayRegex(): String?
     fun saveStreamAutoPlayRegex(regex: String)
+    fun loadStreamLanguageFilter(): String?
+    fun saveStreamLanguageFilter(filter: String)
     fun loadStreamAutoPlayTimeoutSeconds(): Int?
     fun saveStreamAutoPlayTimeoutSeconds(seconds: Int)
     fun loadSkipIntroEnabled(): Boolean?

@@ -89,6 +89,7 @@ import com.nuvio.app.features.p2p.P2pTorrentProfile
 import com.nuvio.app.features.plugins.PluginsUiState
 import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.streams.StreamAutoPlayMode
+import com.nuvio.app.features.streams.StreamLanguageFilter
 import com.nuvio.app.features.streams.StreamAutoPlaySource
 import com.nuvio.app.isDesktop
 import com.nuvio.app.isIos
@@ -847,6 +848,24 @@ private fun PlaybackSettingsSection(
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
+                // WatchParty: a click steps through All -> German + subtitled -> German only
+                val languageFilter = autoPlayPlayerSettings.streamLanguageFilter
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.settings_playback_stream_language),
+                    description = stringResource(
+                        when (languageFilter) {
+                            StreamLanguageFilter.ALL -> Res.string.settings_playback_stream_language_all
+                            StreamLanguageFilter.GERMAN_AND_SUBTITLED -> Res.string.settings_playback_stream_language_german_subtitled
+                            StreamLanguageFilter.GERMAN_ONLY -> Res.string.settings_playback_stream_language_german_only
+                        },
+                    ),
+                    isTablet = isTablet,
+                    onClick = {
+                        val all = StreamLanguageFilter.entries
+                        PlayerSettingsRepository.setStreamLanguageFilter(all[(all.indexOf(languageFilter) + 1) % all.size])
+                    },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
                 SettingsNavigationRow(
                     title = stringResource(Res.string.settings_playback_stream_selection_mode),
                     description = stringResource(autoPlayPlayerSettings.streamAutoPlayMode.labelRes),
