@@ -336,12 +336,14 @@ actual object PluginRepository {
         val scraper = _uiState.value.scrapers.find { it.id == scraperId }
             ?: return Result.failure(IllegalArgumentException(getString(Res.string.plugins_error_provider_not_found)))
 
-        val mediaType = if (scraper.supportsType("movie")) "movie" else "tv"
-        val season = if (mediaType == "tv") 1 else null
-        val episode = if (mediaType == "tv") 1 else null
+        // WatchParty: the manifest can name a title the provider really has; without one it is The Matrix (603) as before
+        val testCase = scraper.testCase
+        val mediaType = testCase?.let { normalizePluginType(it.type) } ?: if (scraper.supportsType("movie")) "movie" else "tv"
+        val season = if (mediaType == "tv") testCase?.season ?: 1 else null
+        val episode = if (mediaType == "tv") testCase?.episode ?: 1 else null
         return executeScraperInternal(
             scraper = scraper,
-            tmdbId = "603",
+            tmdbId = testCase?.tmdbId ?: "603",
             mediaType = mediaType,
             season = season,
             episode = episode,
@@ -382,6 +384,7 @@ actual object PluginRepository {
             append(' ')
             append(resolvedTmdbId)
             if (season != null && episode != null) append(" S${season}E${episode}")
+            scraper.testCase?.takeIf { it.tmdbId == tmdbId }?.title?.let { append(" · ").append(it) }
         }
         return PluginDiagnostics.track(scraper, target) {
             runCatching {
@@ -462,6 +465,7 @@ actual object PluginRepository {
                             logo = info.logo,
                             contentLanguage = info.contentLanguage ?: emptyList(),
                             formats = info.formats ?: info.supportedFormats,
+                            testCase = info.testCase,
                             code = code,
                         )
                     }.getOrNull()

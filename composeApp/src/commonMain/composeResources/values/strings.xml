@@ -2554,4 +2554,8 @@
     <string name="stream_info_subtitle_source_embedded">Embedded</string>
     <string name="stream_info_player_engine">Player Engine</string>
     <string name="stream_info_server">Server</string>
+    <string name="settings_playback_stream_language">Stream language</string>
+    <string name="settings_playback_stream_language_all">All languages</string>
+    <string name="settings_playback_stream_language_german_subtitled">German and German subtitles</string>
+    <string name="settings_playback_stream_language_german_only">German only</string>
 </resources>

@@ -38,6 +38,17 @@ data class PluginManifestScraper(
     @SerialName("supportedFormats") val supportedFormats: List<String>? = null,
     @SerialName("supportsExternalPlayer") val supportsExternalPlayer: Boolean? = null,
     val limited: Boolean? = null,
+    // WatchParty: a title this provider really offers, used by the diagnostics instead of always The Matrix
+    val testCase: PluginTestCase? = null,
+)
+
+@Serializable
+data class PluginTestCase(
+    @SerialName("tmdb") val tmdbId: String,
+    val type: String = "movie",
+    val season: Int? = null,
+    val episode: Int? = null,
+    val title: String? = null,
 )
 
 data class PluginRepositoryItem(
@@ -65,6 +76,7 @@ data class PluginScraper(
     val logo: String? = null,
     val contentLanguage: List<String> = emptyList(),
     val formats: List<String>? = null,
+    val testCase: PluginTestCase? = null,
     val code: String,
 ) {
     fun supportsType(type: String): Boolean {
@@ -142,6 +154,7 @@ internal data class StoredPluginScraper(
     val logo: String? = null,
     val contentLanguage: List<String> = emptyList(),
     val formats: List<String>? = null,
+    val testCase: PluginTestCase? = null,
     val code: String? = null,
 )
 
@@ -182,6 +195,7 @@ internal fun PluginScraper.toStoredPluginScraper(): StoredPluginScraper =
         logo = logo,
         contentLanguage = contentLanguage,
         formats = formats,
+        testCase = testCase,
         code = null,
     )
 
@@ -205,6 +219,7 @@ internal fun StoredPluginScraper.restorePluginScraper(
             logo = logo,
             contentLanguage = contentLanguage,
             formats = formats,
+            testCase = testCase,
             code = resolvedCode,
         ),
         requiresMigration = code != null,

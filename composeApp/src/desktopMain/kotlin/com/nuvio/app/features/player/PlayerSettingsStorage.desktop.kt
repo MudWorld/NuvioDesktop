@@ -77,6 +77,7 @@ internal actual object PlayerSettingsStorage {
     private const val streamAutoPlaySelectedAddonsKey = "stream_auto_play_selected_addons"
     private const val streamAutoPlaySelectedPluginsKey = "stream_auto_play_selected_plugins"
     private const val streamAutoPlayRegexKey = "stream_auto_play_regex"
+    private const val streamLanguageFilterKey = "stream_language_filter"
     private const val streamAutoPlayTimeoutSecondsKey = "stream_auto_play_timeout_seconds"
     private const val skipIntroEnabledKey = "skip_intro_enabled"
     private const val autoSkipSegmentTypesKey = "auto_skip_segment_types"
@@ -155,6 +156,7 @@ internal actual object PlayerSettingsStorage {
         streamAutoPlaySelectedAddonsKey,
         streamAutoPlaySelectedPluginsKey,
         streamAutoPlayRegexKey,
+        streamLanguageFilterKey,
         streamAutoPlayTimeoutSecondsKey,
         skipIntroEnabledKey,
         autoSkipSegmentTypesKey,
@@ -324,6 +326,8 @@ internal actual object PlayerSettingsStorage {
     actual fun saveStreamAutoPlaySelectedPlugins(plugins: Set<String>) = saveStringSet(streamAutoPlaySelectedPluginsKey, plugins)
     actual fun loadStreamAutoPlayRegex(): String? = loadString(streamAutoPlayRegexKey)
     actual fun saveStreamAutoPlayRegex(regex: String) = saveString(streamAutoPlayRegexKey, regex)
+    actual fun loadStreamLanguageFilter(): String? = loadString(streamLanguageFilterKey)
+    actual fun saveStreamLanguageFilter(filter: String) = saveString(streamLanguageFilterKey, filter)
     actual fun loadStreamAutoPlayTimeoutSeconds(): Int? = loadInt(streamAutoPlayTimeoutSecondsKey)
     actual fun saveStreamAutoPlayTimeoutSeconds(seconds: Int) = saveInt(streamAutoPlayTimeoutSecondsKey, seconds)
     actual fun loadSkipIntroEnabled(): Boolean? = loadBoolean(skipIntroEnabledKey)
@@ -453,6 +457,7 @@ internal actual object PlayerSettingsStorage {
         loadStreamAutoPlaySelectedAddons()?.let { put(streamAutoPlaySelectedAddonsKey, encodeSyncStringSet(it)) }
         loadStreamAutoPlaySelectedPlugins()?.let { put(streamAutoPlaySelectedPluginsKey, encodeSyncStringSet(it)) }
         loadStreamAutoPlayRegex()?.let { put(streamAutoPlayRegexKey, encodeSyncString(it)) }
+        loadStreamLanguageFilter()?.let { put(streamLanguageFilterKey, encodeSyncString(it)) }
         loadStreamAutoPlayTimeoutSeconds()?.let { put(streamAutoPlayTimeoutSecondsKey, encodeSyncInt(it)) }
         loadSkipIntroEnabled()?.let { put(skipIntroEnabledKey, encodeSyncBoolean(it)) }
         loadPreloadNextEpisodeSources()?.let { put(preloadNextEpisodeSourcesKey, encodeSyncBoolean(it)) }
@@ -537,6 +542,7 @@ internal actual object PlayerSettingsStorage {
         payload.decodeSyncStringSet(streamAutoPlaySelectedAddonsKey)?.let(::saveStreamAutoPlaySelectedAddons)
         payload.decodeSyncStringSet(streamAutoPlaySelectedPluginsKey)?.let(::saveStreamAutoPlaySelectedPlugins)
         payload.decodeSyncString(streamAutoPlayRegexKey)?.let(::saveStreamAutoPlayRegex)
+        payload.decodeSyncString(streamLanguageFilterKey)?.let(::saveStreamLanguageFilter)
         payload.decodeSyncInt(streamAutoPlayTimeoutSecondsKey)?.let(::saveStreamAutoPlayTimeoutSeconds)
         payload.decodeSyncBoolean(skipIntroEnabledKey)?.let(::saveSkipIntroEnabled)
         payload.decodeSyncBoolean(preloadNextEpisodeSourcesKey)?.let(::savePreloadNextEpisodeSources)
