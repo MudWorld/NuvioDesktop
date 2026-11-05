@@ -54,23 +54,23 @@ import platform.UIKit.UIDevice
 import platform.posix.exit
 
 /**
- * Account + sync for the iPad app.
+ * Account + sync for the iPhone app (its own `iphone.*` sections, separate from the iPad).
  *
  * All app data lives in the standard UserDefaults domain. It is split into 16 buckets by
- * key and uploaded as sections `ipad.d0` … `ipad.d15`; the iPad never reads or writes the
+ * key and uploaded as sections `iphone.d0` … `iphone.d15`; the iPad never reads or writes the
  * `pc.*` (desktop) or `tv.*` (Apple TV) sections. Data fetched from the server is staged
  * in a separate suite and applied on the next launch, before any store reads it.
  *
  * Profiles and everything kept per profile (continue watching, watched, library, addons,
  * plugins, collections) go through the app's own Nuvio sync, which the same server answers.
- * Signing in here also signs in that sync. Those keys still travel in the `ipad.*` buckets as a
+ * Signing in here also signs in that sync. Those keys still travel in the `iphone.*` buckets as a
  * backup but are never written back from them or from the PC copy.
  */
 actual object AccountService {
     actual val supported: Boolean = true
 
     private const val DefaultServerUrl = "https://sync.mudworld.space"
-    private const val SectionPrefix = "ipad.d"
+    private const val SectionPrefix = "iphone.d"
     private const val BucketCount = 16
     private const val PushIntervalMs = 600_000L
     private const val RequestDebounceMs = 5_000L
@@ -143,7 +143,7 @@ actual object AccountService {
     actual val needsSyncSignIn: StateFlow<Boolean> = _needsSyncSignIn.asStateFlow()
 
     private val domainName: String
-        get() = NSBundle.mainBundle.bundleIdentifier ?: "space.mudworld.watchparty.ipad"
+        get() = NSBundle.mainBundle.bundleIdentifier ?: "space.mudworld.watchparty.iphone"
 
     // ---- start-up --------------------------------------------------------
 
@@ -564,7 +564,7 @@ actual object AccountService {
         }
     }
 
-    /** Downloads newer `ipad.*` sections into the staging suite; applied on the next launch. */
+    /** Downloads newer `iphone.*` sections into the staging suite; applied on the next launch. */
     private suspend fun pullNewerSections(forceAll: Boolean = false) {
         val authToken = token ?: return
         val remote = listRemoteSections()
@@ -681,7 +681,7 @@ actual object AccountService {
         val response = try {
             http.request(serverUrl.trimEnd('/') + path) {
                 this.method = method
-                header("User-Agent", "WatchParty-iPad")
+                header("User-Agent", "WatchParty-iPhone")
                 authToken?.let { header("Authorization", "Bearer $it") }
                 if (body != null) {
                     contentType(ContentType.Application.Json)
@@ -719,7 +719,7 @@ actual object AccountService {
         _syncStatus.value = _syncStatus.value.copy(syncing = false, lastError = code)
     }
 
-    private fun deviceName(): String = "iPad " + UIDevice.currentDevice.name
+    private fun deviceName(): String = "iPhone " + UIDevice.currentDevice.name
 
     private fun nowMs(): Long = (NSDate().timeIntervalSince1970 * 1000).toLong()
 

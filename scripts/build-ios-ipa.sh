@@ -104,8 +104,8 @@ trap 'rm -rf "${package_root}"' EXIT
 mkdir -p "${package_root}/Payload"
 ditto "${app_path}" "${package_root}/Payload/WatchParty.app"
 
-ipa_path="${output_directory}/watchparty-ipad-${version}-${configuration_slug}.ipa"
-temporary_ipa="${package_root}/watchparty-ipad-${version}-${configuration_slug}.ipa"
+ipa_path="${output_directory}/watchparty-iphone-${version}-${configuration_slug}.ipa"
+temporary_ipa="${package_root}/watchparty-iphone-${version}-${configuration_slug}.ipa"
 (
     cd "${package_root}"
     /usr/bin/zip -qry "${temporary_ipa}" Payload
