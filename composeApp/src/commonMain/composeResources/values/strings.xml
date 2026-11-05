@@ -2558,4 +2558,23 @@
     <string name="settings_playback_stream_language_all">All languages</string>
     <string name="settings_playback_stream_language_german_subtitled">German and German subtitles</string>
     <string name="settings_playback_stream_language_german_only">German only</string>
+    <string name="tvlogin_title">Sign in a TV</string>
+    <string name="tvlogin_hint">On the TV choose \"Sign in with code\" and enter the code it shows here.</string>
+    <string name="tvlogin_code">Code from the TV</string>
+    <string name="tvlogin_check">Continue</string>
+    <string name="tvlogin_confirm">Allow \"%1$s\" to sign in with your account?</string>
+    <string name="tvlogin_allow">Allow</string>
+    <string name="tvlogin_done">\"%1$s\" is signing in now.</string>
+    <string name="tvlogin_invalid">This code is wrong or has expired.</string>
+    <string name="tvlogin_failed">That did not work. Check the connection and try again.</string>
+    <string name="diagnostics_title">Error reports</string>
+    <string name="diagnostics_switch">Send error reports to my WatchParty server</string>
+    <string name="diagnostics_hint">Crashes and recent errors, without stream links, keys or passwords.</string>
+    <string name="diagnostics_send_now">Send report now</string>
+    <string name="diagnostics_sent">Report sent</string>
+    <string name="diagnostics_failed">The report could not be sent</string>
+    <string name="streams_report_broken">Link does not work</string>
+    <string name="streams_report_sent">Thanks, reported</string>
+    <string name="streams_report_failed">The report could not be sent</string>
+    <string name="plugins_provider_down">Currently faulty, skipped in the search</string>
 </resources>

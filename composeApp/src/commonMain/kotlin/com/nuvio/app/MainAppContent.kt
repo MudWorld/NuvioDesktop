@@ -266,6 +266,7 @@ internal fun MainAppContent(
         LaunchedEffect(ownsAppRuntime) {
             if (!ownsAppRuntime) return@LaunchedEffect
             warmProfileBoundRepositories()
+            com.nuvio.app.features.watchparty.WatchPartyRuntime.start()
         }
         val currentRoute = navBackStack.lastOrNull() as? AppRoute
         var registeredPlayerSystemBack by remember {

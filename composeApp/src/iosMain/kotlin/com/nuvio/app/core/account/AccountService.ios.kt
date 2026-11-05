@@ -90,6 +90,8 @@ actual object AccountService {
         "stream_link_cache", "binge_group_cache", "continue_watching_enrichment",
         // Sign-in state of the Nuvio sync stays on this iPad.
         "anonymous_user_id", "session", "supabase",
+        // WatchParty extras (error-report switch, pending crash, provider status) stay on this device.
+        "watchparty_extras.",
     )
 
     /** Kept by the Nuvio sync per profile; a bucket or PC copy must not overwrite them. */

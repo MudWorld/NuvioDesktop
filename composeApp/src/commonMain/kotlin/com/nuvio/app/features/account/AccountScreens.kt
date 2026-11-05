@@ -47,6 +47,8 @@ import com.nuvio.app.core.ui.NuvioStatusModal
 import com.nuvio.app.core.ui.NuvioSurfaceCard
 import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.features.watchparty.DiagnosticsCard
+import com.nuvio.app.features.watchparty.TvLoginApprovalCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
@@ -340,6 +342,8 @@ fun AccountSettingsPanel() {
             }
         }
         if (session != null) {
+            TvLoginApprovalCard()
+            DiagnosticsCard()
             NuvioPrimaryButton(
                 text = stringResource(Res.string.account_sign_out),
                 onClick = { showSignOut = true },
