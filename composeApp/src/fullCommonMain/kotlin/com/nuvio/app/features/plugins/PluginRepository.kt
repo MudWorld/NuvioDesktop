@@ -327,7 +327,8 @@ actual object PluginRepository {
         initialize()
         if (!_uiState.value.pluginsEnabled) return emptyList()
         return _uiState.value.scrapers.filter { scraper ->
-            scraper.enabled && scraper.supportsType(type)
+            scraper.enabled && scraper.supportsType(type) &&
+                !com.nuvio.app.features.watchparty.ProviderStatusRepository.isDown(scraper.id, scraper.repositoryUrl)
         }
     }
 

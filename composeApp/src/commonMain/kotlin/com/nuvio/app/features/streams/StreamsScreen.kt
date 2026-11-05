@@ -36,6 +36,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -180,6 +181,8 @@ fun StreamsScreen(
     val isEpisode = seasonNumber != null && episodeNumber != null
     val clipboardManager = LocalClipboardManager.current
     val streamLinkCopiedText = stringResource(Res.string.streams_link_copied)
+    val streamReportSentText = stringResource(Res.string.streams_report_sent)
+    val streamReportFailedText = stringResource(Res.string.streams_report_failed)
     val noDirectStreamLinkText = stringResource(Res.string.streams_no_direct_link)
     var streamActionsTarget by remember(videoId) { mutableStateOf<StreamActionsTarget?>(null) }
     val downloadScope = rememberCoroutineScope()
@@ -446,6 +449,20 @@ fun StreamsScreen(
                     effectiveResumePositionMs,
                     effectiveResumeProgressFraction,
                 )
+            },
+            onReport = { stream ->
+                downloadScope.launch {
+                    com.nuvio.app.features.watchparty.StreamReports.send(
+                        stream = stream,
+                        title = listOfNotNull(title, episodeTitle).joinToString(" · "),
+                        contentId = parentMetaId,
+                        contentType = parentMetaType,
+                        season = seasonNumber,
+                        episode = episodeNumber,
+                    )
+                        .onSuccess { NuvioToastController.show(streamReportSentText) }
+                        .onFailure { NuvioToastController.show(streamReportFailedText) }
+                }
             },
         )
     }
@@ -1158,6 +1175,7 @@ private fun StreamActionsHost(
     onCopyLink: (StreamItem) -> Unit,
     onDownload: (StreamItem) -> Unit,
     onOpen: (StreamItem, openExternally: Boolean) -> Unit,
+    onReport: (StreamItem) -> Unit,
 ) {
     if (target == null) return
 
@@ -1173,6 +1191,7 @@ private fun StreamActionsHost(
             onCopyLink = onCopyLink,
             onDownload = onDownload,
             onOpen = onOpen,
+            onReport = onReport,
         )
     } else {
         StreamActionsSheet(
@@ -1184,6 +1203,7 @@ private fun StreamActionsHost(
             onCopyLink = onCopyLink,
             onDownload = onDownload,
             onOpen = onOpen,
+            onReport = onReport,
         )
     }
 }
@@ -1205,6 +1225,7 @@ private fun DesktopStreamActionsMenu(
     onCopyLink: (StreamItem) -> Unit,
     onDownload: (StreamItem) -> Unit,
     onOpen: (StreamItem, openExternally: Boolean) -> Unit,
+    onReport: (StreamItem) -> Unit,
 ) {
     val density = LocalDensity.current
     val edgeMarginPx = with(density) { 8.dp.roundToPx() }
@@ -1241,6 +1262,13 @@ private fun DesktopStreamActionsMenu(
                 ),
             )
         }
+        add(
+            DesktopStreamAction(
+                icon = Icons.Rounded.Flag,
+                title = stringResource(Res.string.streams_report_broken),
+                onClick = { onReport(stream) },
+            ),
+        )
     }
 
     Popup(
@@ -1381,6 +1409,7 @@ private fun StreamActionsSheet(
     onCopyLink: (StreamItem) -> Unit,
     onDownload: (StreamItem) -> Unit,
     onOpen: (StreamItem, openExternally: Boolean) -> Unit,
+    onReport: (StreamItem) -> Unit,
 ) {
     if (stream == null) return
 
@@ -1468,6 +1497,16 @@ private fun StreamActionsSheet(
                     },
                 )
             }
+            NuvioBottomSheetActionRow(
+                icon = Icons.Rounded.Flag,
+                title = stringResource(Res.string.streams_report_broken),
+                onClick = {
+                    onReport(stream)
+                    coroutineScope.launch {
+                        dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
+                    }
+                },
+            )
         }
     }
 }

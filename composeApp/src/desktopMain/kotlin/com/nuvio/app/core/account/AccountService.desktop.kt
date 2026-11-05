@@ -61,6 +61,7 @@ actual object AccountService {
     private val excludedStores = setOf(
         "nuvio_account",
         "nuvio_auth",
+        "watchparty_extras",
         "nuvio_window_state",
         "nuvio_sync_client_identity",
         "nuvio_player_runtime",

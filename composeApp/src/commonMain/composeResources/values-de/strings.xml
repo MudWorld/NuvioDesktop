@@ -1264,4 +1264,23 @@
     <string name="settings_playback_stream_language_all">Alle Sprachen</string>
     <string name="settings_playback_stream_language_german_subtitled">Deutsch und deutsche Untertitel</string>
     <string name="settings_playback_stream_language_german_only">Nur Deutsch</string>
+    <string name="tvlogin_title">Fernseher anmelden</string>
+    <string name="tvlogin_hint">Wähle am Fernseher „Mit Code anmelden“ und gib hier den Code ein, den er zeigt.</string>
+    <string name="tvlogin_code">Code vom Fernseher</string>
+    <string name="tvlogin_check">Weiter</string>
+    <string name="tvlogin_confirm">Darf sich „%1$s“ mit deinem Konto anmelden?</string>
+    <string name="tvlogin_allow">Erlauben</string>
+    <string name="tvlogin_done">„%1$s“ meldet sich jetzt an.</string>
+    <string name="tvlogin_invalid">Der Code ist falsch oder abgelaufen.</string>
+    <string name="tvlogin_failed">Das hat nicht geklappt. Prüfe die Verbindung und versuche es noch einmal.</string>
+    <string name="diagnostics_title">Fehlerberichte</string>
+    <string name="diagnostics_switch">Fehlerberichte an meinen WatchParty-Server senden</string>
+    <string name="diagnostics_hint">Abstürze und letzte Fehler, ohne Stream-Links, Schlüssel und Passwörter.</string>
+    <string name="diagnostics_send_now">Bericht jetzt senden</string>
+    <string name="diagnostics_sent">Bericht gesendet</string>
+    <string name="diagnostics_failed">Der Bericht konnte nicht gesendet werden</string>
+    <string name="streams_report_broken">Link geht nicht</string>
+    <string name="streams_report_sent">Danke, gemeldet</string>
+    <string name="streams_report_failed">Die Meldung konnte nicht gesendet werden</string>
+    <string name="plugins_provider_down">Derzeit gestört, wird bei der Suche übersprungen</string>
 </resources>

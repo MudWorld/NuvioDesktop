@@ -44,6 +44,7 @@ import com.nuvio.app.features.plugins.runtime.PluginRuntime
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.plugins_badge_disabled
+import nuvio.composeapp.generated.resources.plugins_provider_down
 import nuvio.composeapp.generated.resources.plugins_badge_enabled
 import nuvio.composeapp.generated.resources.plugins_badge_providers
 import nuvio.composeapp.generated.resources.plugins_badge_refreshing
@@ -95,6 +96,7 @@ fun PluginsSettingsPageContent(
 
     var testingScraperId by remember { mutableStateOf<String?>(null) }
     val testResults = remember { mutableStateMapOf<String, List<PluginRuntimeResult>>() }
+    val providersDown by com.nuvio.app.features.watchparty.ProviderStatusRepository.down.collectAsStateWithLifecycle()
 
     var configuringScraper by remember { mutableStateOf<PluginScraper?>(null) }
     var configuringLayout by remember { mutableStateOf<String?>(null) }
@@ -379,6 +381,15 @@ fun PluginsSettingsPageContent(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
+                                if (scraper.id in providersDown &&
+                                    com.nuvio.app.features.watchparty.ProviderStatusRepository.isDown(scraper.id, scraper.repositoryUrl)
+                                ) {
+                                    Text(
+                                        text = stringResource(Res.string.plugins_provider_down),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
                                 Text(
                                     text = scraper.description.ifBlank {
                                         stringResource(Res.string.plugins_provider_no_description)
