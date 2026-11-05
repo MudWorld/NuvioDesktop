@@ -10,8 +10,9 @@ on:
   push:
     branches: [desktop-livetv]
 
+# contents: write publishes each build as a GitHub release; the app's updater installs it from there.
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   windows:
@@ -24,6 +25,10 @@ jobs:
       NUVIO_SUPABASE_URL: https://sync.mudworld.space
       NUVIO_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJudXZpby13YXRjaHBhcnR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcyMjU2MDAsImV4cCI6MjM5Nzk0NTYwMH0.GRt8FY_cs7h0KOysW54JQ4Wzuy4LEuLwPJlChCcQg9o
       LOCAL_PROPERTIES: ${{ secrets.NUVIO_LOCAL_PROPERTIES }}
+      # Every build gets a higher version, so the MSI upgrades in place (same upgrade code) and the
+      # in-app updater sees it as new. 0.2.N becomes MSI version 1.2.N, above the old 1.1.33.
+      NUVIO_DESKTOP_VERSION_NAME: 0.2.${{ github.run_number }}
+      NUVIO_DESKTOP_VERSION_CODE: ${{ github.run_number }}
 
     steps:
       - name: Check out source
@@ -89,10 +94,29 @@ jobs:
             --stacktrace
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Name the MSI for the updater
+        shell: bash
+        run: |
+          msi="$(find composeApp/build/compose -name '*.msi' | head -1)"
+          mkdir -p release
+          cp "$msi" "release/WatchParty-${NUVIO_DESKTOP_VERSION_NAME}-windows-x64.msi"
+          ls -la release
+
       - name: Upload MSI
         uses: actions/upload-artifact@v7
         with:
           name: nuvio-desktop-fork-windows-x64
-          path: composeApp/build/compose/**/*.msi
+          path: release/*.msi
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish release for the in-app updater
+        if: github.ref == 'refs/heads/desktop-livetv'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.NUVIO_DESKTOP_VERSION_NAME }}
+          name: WatchParty PC ${{ env.NUVIO_DESKTOP_VERSION_NAME }}
+          target_commitish: ${{ github.sha }}
+          body: Automatic build of ${{ github.sha }} (WatchParty PC). The app offers it under Settings, Updates.
+          files: release/*.msi
+          make_latest: true
