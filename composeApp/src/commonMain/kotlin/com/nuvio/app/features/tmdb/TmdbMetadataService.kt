@@ -718,9 +718,15 @@ object TmdbMetadataService {
             val episodeDeferred = if (needsEpisodes) {
                 async {
                     val seasons = meta.videos.mapNotNull { it.season }.distinct()
-                    fetchEpisodeEnrichment(
+                    val byNumber = fetchEpisodeEnrichment(
                         tmdbId = tmdbId,
                         seasonNumbers = seasons,
+                        language = settings.language,
+                    )
+                    withAirDateAlignment(
+                        tmdbId = tmdbId,
+                        videos = meta.videos,
+                        byNumber = byNumber,
                         language = settings.language,
                     )
                 }
@@ -1147,6 +1153,42 @@ object TmdbMetadataService {
         }
     }
 
+    /**
+     * Long-running anime (e.g. Detective Conan) are split into many seasons by Cinemeta but kept as one
+     * long season on TMDB, so most episodes find no TMDB entry by season/episode number and stay in
+     * English. When many episodes are missing, the TMDB episodes are matched to the add-on's episodes by
+     * air date instead (both lists are in broadcast order). Numbers that matched keep their match.
+     */
+    private suspend fun withAirDateAlignment(
+        tmdbId: String,
+        videos: List<MetaVideo>,
+        byNumber: Map<Pair<Int, Int>, TmdbEpisodeEnrichment>,
+        language: String,
+    ): Map<Pair<Int, Int>, TmdbEpisodeEnrichment> {
+        val regular = videos.filter { (it.season ?: 0) > 0 && it.episode != null }
+        val missing = regular.count { (it.season!! to it.episode!!) !in byNumber }
+        if (missing < 3 || missing * 5 < regular.size) return byNumber
+        val numericId = tmdbId.toIntOrNull() ?: return byNumber
+        val seasonCount = fetch<TmdbDetailsResponse>(
+            endpoint = "tv/$numericId",
+            query = mapOf("language" to normalizeTmdbLanguage(language)),
+        )?.numberOfSeasons ?: return byNumber
+        if (seasonCount < 1) return byNumber
+        val tmdbEpisodes = fetchEpisodeEnrichment(tmdbId, (1..seasonCount).toList(), language)
+            .entries
+            .sortedWith(compareBy({ it.key.first }, { it.key.second }))
+            .map { it.value }
+        val aligned = alignByAirDate(
+            sourceDays = regular.sortedWith(compareBy({ it.season }, { it.episode })).map { video ->
+                (video.season!! to video.episode!!) to video.released?.let(::epochDay)
+            },
+            tmdb = tmdbEpisodes.map { it to it.airDate?.let(::epochDay) },
+        )
+        if (aligned.isEmpty()) return byNumber
+        log.i { "TMDB episodes of $tmdbId matched by air date: ${aligned.size} of ${regular.size}" }
+        return aligned + byNumber
+    }
+
     private suspend fun fetchEpisodeEnrichment(
         tmdbId: String,
         seasonNumbers: List<Int>,
@@ -1470,6 +1512,42 @@ private data class EnrichmentPayload(
     val moreLikeThis: List<MetaPreview>,
     val trailers: List<MetaTrailer>,
 )
+
+/**
+ * Pairs two broadcast-ordered episode lists by air date (one day apart counts as the same day: time zones).
+ * Entries without a date are skipped. Returns the add-on key of each matched episode with its TMDB data.
+ */
+internal fun <K, T> alignByAirDate(sourceDays: List<Pair<K, Long?>>, tmdb: List<Pair<T, Long?>>): Map<K, T> {
+    val source = sourceDays.filter { it.second != null }
+    val target = tmdb.filter { it.second != null }
+    val result = LinkedHashMap<K, T>()
+    var i = 0
+    var j = 0
+    while (i < source.size && j < target.size) {
+        val diff = source[i].second!! - target[j].second!!
+        when {
+            diff in -1L..1L -> { result[source[i].first] = target[j].first; i++; j++ }
+            diff < 0 -> i++
+            else -> j++
+        }
+    }
+    return result
+}
+
+/** Days since 1970-01-01 for an ISO date or date-time ("2011-02-26", "2011-02-26T00:00:00.000Z"). */
+internal fun epochDay(value: String): Long? {
+    val parts = value.trim().take(10).split('-')
+    if (parts.size != 3) return null
+    val y0 = parts[0].toLongOrNull() ?: return null
+    val m = parts[1].toLongOrNull()?.takeIf { it in 1..12 } ?: return null
+    val d = parts[2].toLongOrNull()?.takeIf { it in 1..31 } ?: return null
+    val y = if (m <= 2) y0 - 1 else y0
+    val era = (if (y >= 0) y else y - 399) / 400
+    val yoe = y - era * 400
+    val doy = (153 * (if (m > 2) m - 3 else m + 9) + 2) / 5 + d - 1
+    val doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+    return era * 146097 + doe - 719468
+}
 
 internal data class TmdbEpisodeEnrichment(
     val title: String?,
